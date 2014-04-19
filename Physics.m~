@@ -1,5 +1,34 @@
 classdef Physics
     methods (Static)
+        function K_out = K(element,material,integration_order)
+            %
+            % It returnes Ke for the element. It is physics dependent,
+            D = material.C;
+            [gauss_points,gauss_weights]= lgwt(integration_order,-1,1);     % sampling points & weights
+            K_out = zeros(element.dofs_per_element);        % initialization of stiffness matrix
+            
+            % Numerical integration
+            for int_mu = 1:integration_order
+                mu = gauss_points(int_mu,1);
+                wtz = gauss_weights(int_mu,1);
+                for int_xi = 1:integration_order
+                    xi = gauss_points(int_xi,1);                            % sampling point in x-axis
+                    wtx = gauss_weights(int_xi,1);                          % weight in x-axis
+                    for int_eta= 1:integration_order
+                        eta = gauss_points(int_eta,1);                       % sampling point in y-axis
+                        wty = gauss_weights(int_eta,1);                     % weight in y-axis
+                        
+                        jacobian = element.jacobian(xi,eta,mu);           % compute Jacobian
+                        B = element.Bmatrix(xi,eta,mu);            % kinematic matrix for stiffness
+                        K_out = K_out + B'*D*B*wtx*wty*wtz*det(jacobian);
+                        % POSIBLE ERROR: va con t multiplicando?
+                        % k = k+(t)*B'*D*B*wtx*wty*det(jacobian);
+                    end
+                end
+            end                      % end of numerical integration loop for bending term
+            [eig_vect, eig_val] = eig(K_out);
+            diag(eig_val)
+        end
         function B_out = B(element,xi,eta,mu)
             % B_out [6x20] Computes B matix - Cook 361 12.5-10
             % B = H*T_j*N_devs

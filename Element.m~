@@ -5,7 +5,7 @@ classdef Element
     end
     properties (Dependent)
         thickness_at_node
-        mu_matrix
+        u_matrix
     end
     methods
         function obj = Element(coords,normals)
@@ -29,11 +29,33 @@ classdef Element
             jac_out = [dNdxi;dNdeta;zeros(1,4)]*element.coords ...
                 + [mu*dNdxi;mu*dNdeta;N]*element.normals/2;
         end
+        function Ndevs_out = Ndevs(element,xi,eta,mu)
+            % 
+            dim = 3;
+            ndofs = 5;
+            n_nodes = 4;
+            t_at_node = element.thickness_at_node; 
+            dN = [Element.dNdxi_Q4(xi,eta); Element.dNeta_Q4(xi,eta)];
+            N = Element.N_Q4(xi,eta);
+            u_matrix = element.u_matrix;
+            Ndevs_out = zeros(dim^2,n_nodes*ndofs);
+            for node = 1:n_nodes
+                aux = zeros(dim^2,ndofs);
+                for j = 1:dim
+                    aux2 = zeros(dim,ndofs);
+                    aux2(1:2,j) = dN(:,node);
+                    aux2(1:2,4:5) = 0.5*t_at_node(node)*mu*dN(:,node)*u_matrix(j,:,node);
+                    aux2(3,4:5) = 0.5*t_at_node(node)*N(node)*u_matrix(j,:,node);
+                    aux(index_range(dim,j),:) = aux2;
+                end 
+                Ndevs_out(:,index_range(ndofs,node)) = aux;
+            end
+%             size(Ndevs_out)
+        end
         function thickness_out = get.thickness_at_node(element)
             % thickness_out = get.thickness_at_node(element)
-            % thickness_out [4x1][Float] original thickness of the shell at
-            % each node. Cook pg 358 12.5-1 as t_i
-            % Computed from the normals vector
+            % thickness_out [4x1][Float] original thickness of the shell at from the magnitude of
+            % the normals vector
             V3 = element.normals';
             node_num = 4;
             thickness_out = zeros(node_num,1);
@@ -41,26 +63,23 @@ classdef Element
                 thickness_out(node) = norm(V3(:,node));
             end
         end
-        function mu_out = get.mu_matrix(element)
-            % mu_out = get.mu_matrix(element)
-            % mu_out [3x2x4] Cook pg 359 12.5-3
-            % Computes the matrix for each element and stores it in a 3D
-            % array
-            node_num = 4;
+        function u_out = get.u_matrix(element)
+            node_num = element.nodes_per_element;
+            xm = element.coordinates;
             V1 = zeros(3,node_num);
             node = 1;
             for i = [-1,1]
                 for j = [-1,1]
-                    V1(:,node) = Element.dNeta_Q4(i,j)*element.coords;
+                    V1(:,node) = element.dN_deta(i,j,0)*xm;
                     node = node + 1;
                 end
             end
-            V3 = element.normals';
-            mu_out = zeros(3,2,node_num);
+            V3 = element.v3;
+            u_out = zeros(3,2,node_num);
             for node = 1:node_num
-                mu_out(:,2,node) = V1(:,node)/norm(V1(:,node)); 
-                aux = cross(V3(:,node),mu_out(:,2,node));
-                mu_out(:,1,node) = -aux/norm(aux);
+                u_out(:,2,node) = V1(:,node)/norm(V1(:,node)); 
+                aux = cross(V3(:,node),u_out(:,2,node));
+                u_out(:,1,node) = -aux/norm(aux);
             end
         end
     end

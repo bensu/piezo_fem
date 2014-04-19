@@ -1,28 +1,83 @@
 classdef TestSuite < matlab.unittest.TestCase
     methods (Test)
-        function BoxFactoryTest(testCase)
-            % Generate simplest box
-            [coords, connect] = Factory.Box([1,1,1],[1,1,1]);
-            % Extract basic properties.
-            [n_nodes, dim] = size(coords);
-            [n_ele, nodes_per_ele] = size(connect);
-            % Compare them to expected results.
-            testCase.verifyEqual(8,n_nodes);
-            testCase.verifyEqual(1,n_ele);
-            testCase.verifyEqual(3,dim);
-            testCase.verifyEqual(8,nodes_per_ele);
+        function K_Mech(testCase)
+            a = 1;
+            [coords, ~, node_normals] = Factory.Shell([1,1],[a,a,a]);
+            ele = Element(coords,node_normals);
+            Physics.K(ele,material,2);
         end
-        function ShellFactoryTest(testCase)
-            [coords, connect, node_normals] = Factory.Shell([1,1],[1,1,0.1]);
-            % Extract basic properties.
-            [n_nodes, dim] = size(coords);
-            [n_ele, nodes_per_ele] = size(connect);
-            % Compare them to expected results.
-            testCase.verifyEqual(4,n_nodes);
-            testCase.verifyEqual(1,n_ele);
-            testCase.verifyEqual(3,dim);
-            testCase.verifyEqual(4,nodes_per_ele);
-            testCase.verifyEqual(size(node_normals),size(coords));
+        function B_Mech(testCase)
+            a = 1;
+            [coords, ~, node_normals] = Factory.Shell([1,1],[a,a,a]);
+            ele = Element(coords,node_normals);
+            B = Physics.B(ele,0,0,0);
+            % B should be [6 x 5*nodes]
+            testCase.verifyEqual([6,20],size(B));
+            % in a cubic element there should be no coupling between the
+            % angles + the z direction and the flat x,y components
+            w_coupling = B(1:3,sort([3:5:20 4:5:20 5:5:20]));
+            testCase.verifyEqual(zeros(3,12),w_coupling);
+        end
+        function Ndevs_Mech_ShellQ4Test(testCase)
+            a = 1;
+            [coords, ~, node_normals] = Factory.Shell([1,1],[a,a,a]);
+            ele = Element(coords,node_normals);
+            % Ndevs should be [9x20]
+            right_size = true;
+            % The sum of the first part should be 0 because its pure shape
+            % functions
+            begins_zero = true;
+            % Since the mesh is perfectly square, the last row is always
+            % zero
+            last_row_zero = true;
+            count = 1;
+            for xi = [-1,1]
+                for eta = [-1,1]
+                    for mu = [-1,1]
+                        devs = Physics.Ndevs(ele,xi,eta,mu);
+                        right_size = right_size && ...
+                            all(([9, 20] == size(devs)));
+                        last_row_zero = last_row_zero && ...
+                            all(zeros(1,20)==devs(9,:));
+                        % Sum the matrixs as Cook 360 12.5-9
+                        aux = zeros(9,5);
+                        for n = 1:4
+                            aux = aux + devs(:,index_range(5,n));
+                        end
+                        begins_zero = begins_zero && ...
+                            all(all(zeros(9,3)==aux(:,1:3)));
+                        count = count + 1;
+                    end
+                end
+            end
+            testCase.verifyEqual(true,right_size);
+            testCase.verifyEqual(true,begins_zero);
+            testCase.verifyEqual(true,last_row_zero);
+        end
+        function Jacobian_ShellQ4Test(testCase)
+            % Since the element is 'cubic'
+            a = 1;
+            % we expect a diagonal jacobian with a 1/2 value
+            [coords, ~, node_normals] = Factory.Shell([1,1],[a,a,a]);
+            ele = Element(coords,node_normals);
+            results = zeros(8,3);
+            is_diag = true;
+            count = 1;
+            for xi = [-1,1]
+                for eta = [-1,1]
+                    for mu = [-1,1]
+                        jac = ele.jacobian(xi,eta,mu);
+                        results(count,:) = diag(jac);
+                        is_diag = is_diag && ...
+                            isequal(diag(diag(jac)),jac);
+                        count = count + 1;
+                    end
+                end
+            end
+            % Are all the diagonal values == 1/2?
+            testCase.verifyEqual(true,all(all(results==1/2)));
+            % Were all the jacobians diagonal?
+            testCase.verifyEqual(true,is_diag);
         end
         function N_Q4Tests(testCase)
             % Loop through all the corners:
@@ -45,29 +100,29 @@ classdef TestSuite < matlab.unittest.TestCase
             testCase.verifyEqual(true,all(magnitude==1));
             testCase.verifyEqual(true,all(value));
         end
-        function ShellQ4_Test(testCase)
-            % Since the element is 'cubic'
-            a = 1;
-            % we expect a diagonal jacobian with a 1/2 value
-            [coords, ~, node_normals] = Factory.Shell([1,1],[a,a,a]);
-            ele = Element(coords,node_normals);
-            results = zeros(8,3);
-            is_diag = zeros(8,1);
-            count = 1;
-            for xi = -1:2:1
-                for eta = -1:2:1
-                    for mu = -1:2:1
-                        jac = ele.jacobian(xi,eta,mu);
-                        results(count,:) = diag(jac);
-                        is_diag(count) = isequal(diag(diag(jac)),jac);
-                        count = count + 1;
-                    end
-                end
-            end
-            % Are all the diagonal values == 1/2?
-            testCase.verifyEqual(true,all(all(results==1/2)));
-            % Were all the jacobians diagonal?
-            testCase.verifyEqual(true,all(is_diag));
+        function ShellFactoryTest(testCase)
+            [coords, connect, node_normals] = Factory.Shell([1,1],[1,1,0.1]);
+            % Extract basic properties.
+            [n_nodes, dim] = size(coords);
+            [n_ele, nodes_per_ele] = size(connect);
+            % Compare them to expected results.
+            testCase.verifyEqual(4,n_nodes);
+            testCase.verifyEqual(1,n_ele);
+            testCase.verifyEqual(3,dim);
+            testCase.verifyEqual(4,nodes_per_ele);
+            testCase.verifyEqual(size(node_normals),size(coords));
+        end
+        function BoxFactoryTest(testCase)
+            % Generate simplest box
+            [coords, connect] = Factory.Box([1,1,1],[1,1,1]);
+            % Extract basic properties.
+            [n_nodes, dim] = size(coords);
+            [n_ele, nodes_per_ele] = size(connect);
+            % Compare them to expected results.
+            testCase.verifyEqual(8,n_nodes);
+            testCase.verifyEqual(1,n_ele);
+            testCase.verifyEqual(3,dim);
+            testCase.verifyEqual(8,nodes_per_ele);
         end
     end
 end
