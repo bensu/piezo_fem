@@ -43,6 +43,7 @@ classdef Mesh
                 K(dofs,dofs) = K(dofs,dofs) + fun_in(ele);
             end
         end
+        %% DOF helpers
         function dofs = all_eles_dofs(mesh,dofs_per_node,dofs_per_ele,ele_id)
             % eles_dofs(mesh,dofs_per_node,dofs_per_ele,ele_id)
             % Computes the complete Dof list for a certain element
@@ -79,6 +80,7 @@ classdef Mesh
             % out = last_node_dof(mesh,dofs_per_node)
             out = mesh.n_nodes*dofs_per_node;
         end
+        %% Element Helpers
         function ele = ele(mesh,ele_id)
             % ele = ele(mesh,ele_id)
             % ele [Element]
@@ -92,6 +94,7 @@ classdef Mesh
             % Returns all the IDs corresponding to ele_id
             node_ids = mesh.connect(ele_id,:);
         end
+        %% Dependent Properties
         function out = get.n_nodes(mesh)
         % out = n_nodes(mesh)
         % Number of Nodes
