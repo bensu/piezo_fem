@@ -1,5 +1,42 @@
 classdef Factory
     methods (Static)
+        function mesh = ShellMesh(n_elements,sides)
+            % mesh = ShellMesh(n_elements,sides)
+            % mesh [Mesh]: New Generated mesh
+            % sides = [a,b,c] [1x3][Float]: sides of the shell 
+            % n_elements = [m,n] [1x2][Int]: num of elements in each edge
+            [coords, connect, node_normals] = Factory.Shell(n_elements,sides);
+            mesh = Mesh(coords,connect,node_normals);
+        end
+        function [coords, connect, node_normals] = Shell(n_elements,sides)
+            % mesh = ShellMesh(n_elements,sides,E,nu,rho)
+            % sides = [a,b,c] [1x3][Float]: sides of the shell 
+            % n_elements = [m,n] [1x2][Int]: num of elements in each edge
+            
+            % Create Main Data
+            % Since BasicBox generates a 3D box and we need a Shell, we
+            % specify only 1 element in the z direction.
+            [coords_aux, connect_aux] = Factory.Box([n_elements,1],sides);
+
+            % Generate Mesh from Box
+            n_original_nodes = size(coords_aux,1);
+            require(rem(n_original_nodes,2)==0,'Uneven number of nodes')
+            
+            % Find bottom an top nodes coords
+            % (I'm ASSUMING they have a specific order, the last ones are
+            % the bottom ones, depends on BasicBox)
+            r_bottom = coords_aux(1:n_original_nodes/2,:); 
+            r_top = coords_aux((n_original_nodes/2+1):end,:);
+            coords = (r_bottom + r_top)/2;    % Middle coords
+            
+            % Because we reduced the node quantity we don't need all the 
+            % nodes in connection. I ASSUME that the relevant ones are
+            % located in 1:4 (Depends on BasicBox)
+            connect = connect_aux(:,1:4);
+            
+            % Vector that gives the orientation of the shell for each node
+            node_normals = (r_top - r_bottom); % [nodes x 3]
+        end
         function [coords, connections] = Box(n_elements,sides)
             % [coords, connections] = BasicBox(n_elements,sides)
             % coords [nodes x 3][Float]: coords of all the nodes
@@ -57,36 +94,6 @@ classdef Factory
                     end
                 end
             end
-        end
-        function [coords, connect, node_normals] = Shell(n_elements,sides)
-            % mesh = ShellMesh(n_elements,sides,E,nu,rho)
-            % mesh [Mesh]: New generated mesh
-            % sides = [a,b,c] [1x3][Float]: sides of the shell 
-            % n_elements = [m,n] [1x2][Int]: num of elements in each edge
-            
-            % Create Main Data
-            % Since BasicBox generates a 3D box and we need a Shell, we
-            % specify only 1 element in the z direction.
-            [coords_aux, connect_aux] = Factory.Box([n_elements,1],sides);
-
-            % Generate Mesh from Box
-            n_original_nodes = size(coords_aux,1);
-            require(rem(n_original_nodes,2)==0,'Uneven number of nodes')
-            
-            % Find bottom an top nodes coords
-            % (I'm ASSUMING they have a specific order, the last ones are
-            % the bottom ones, depends on BasicBox)
-            r_bottom = coords_aux(1:n_original_nodes/2,:); 
-            r_top = coords_aux((n_original_nodes/2+1):end,:);
-            coords = (r_bottom + r_top)/2;    % Middle coords
-            
-            % Because we reduced the node quantity we don't need all the 
-            % nodes in connection. I ASSUME that the relevant ones are
-            % located in 1:4 (Depends on BasicBox)
-            connect = connect_aux(:,1:4);
-            
-            % Vector that gives the orientation of the shell for each node
-            node_normals = (r_top - r_bottom); % [nodes x 3]
         end
     end
 end

@@ -1,11 +1,27 @@
 classdef Physics
+    properties
+        dofs_per_node
+        dofs_per_ele
+        k
+    end
+    methods
+        function obj = Physics(dofs_per_node,dofs_per_ele,fun_in)
+            require(all(~mod([dofs_per_node,dofs_per_ele],1)), ...
+                'ArgumentError: dof numbers should be integers');
+            require(isa(fun_in,'function_handle'), ...
+                'ArgumentError: fun_in should be a function handle');
+            obj.dofs_per_node = dofs_per_node;
+            obj.dofs_per_ele = dofs_per_ele;
+            obj.k = fun_in;
+        end
+    end
     methods (Static)
-        function K = K(element,material,order)
+        function K = K_Shell(element,material,order)
         % K [20x20][Float] Stiffness as calculated in Cook 361 12.4-14
         % element [Element]: Requires methods jacobian and B
         % material[Material]: Requires methods E and nu
         % order [Int]: Gauss integration order
-            C = Physics.IsoElastic(material);
+            C = Physics.ElasticShell(material);
             function out = K_in_point(xi,eta,mu)
                 % Compute Jacobian
                 jacobian = element.jacobian(xi,eta,mu);
@@ -16,9 +32,9 @@ classdef Physics
                 % B'*D*B*wtx*wty*det(jacobian);
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
-            K = Integration.Volume3D(fun_in,20,order,[-1 1]);
+            K = Integral.Volume3D(fun_in,20,order,[-1 1]);
         end
-        function C = IsoElastic(material)
+        function C = ElasticShell(material)
             % Computes the Elastic Tensor in matrix form for an Isotropic
             % material
             E = material.E;
@@ -57,7 +73,7 @@ classdef Physics
             % displacement field
             dim = 3;
             ndofs = 5;
-            n_nodes = 4;
+            n_nodes = element.n_nodes;
             t_at_node = element.thickness_at_node; 
             dN = [Element.dNdxi_Q4(xi,eta); Element.dNeta_Q4(xi,eta)];
             N = Element.N_Q4(xi,eta);

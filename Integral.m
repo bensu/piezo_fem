@@ -1,4 +1,4 @@
-classdef Integration
+classdef Integral
     methods (Static)
         function mat_out = Volume3D(fun_in,fun_size,order,interval)
             % mat_out = Volume3D(fun_in,fun_size,order,interval)
@@ -22,7 +22,7 @@ classdef Integration
                 'ArgumentError: fun_size should be > 0');
             require(~mod(fun_size,1), ...
                 'ArgumentError: fun_size should be integer');
-            [gauss_p,gauss_w] = Integration.lgwt(order,interval(1),interval(2));     % sampling points & weights
+            [gauss_p,gauss_w] = Integral.lgwt(order,interval(1),interval(2));     % sampling points & weights
             mat_out = zeros(fun_size); % Initialization of Matrix
             % Numerical integration
             for int_mu = 1:order

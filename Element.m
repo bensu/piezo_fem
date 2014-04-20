@@ -4,6 +4,7 @@ classdef Element
         normals
     end
     properties (Dependent)
+        n_nodes
         thickness_at_node
         mu_matrix
     end
@@ -62,6 +63,11 @@ classdef Element
                 aux = cross(V3(:,node),mu_out(:,2,node));
                 mu_out(:,1,node) = -aux/norm(aux);
             end
+        end
+        function out = get.n_nodes(element)
+            % out = get.n_nodes(element)
+            % Number of nodes in the element
+            out = size(element.coords,1);
         end
     end
     methods (Static)

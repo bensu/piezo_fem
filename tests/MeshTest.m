@@ -1,19 +1,40 @@
-classdef MeshTestSuite < matlab.unittest.TestCase
+classdef MeshTest < matlab.unittest.TestCase
     methods (Test)
-         function Assembly_Test(testCase)
-            [coords, connect, node_normals] = Factory.Shell([1,1],[1,1,0.1]);
-            mesh = Mesh(coords,connect,node_normals);
+        function AssemblyTest(testCase)
+            % Tests the assembly function using on 2 elements checking
+            % where are the dofs coupled
+            mesh = Factory.ShellMesh([2,1],[1,1,0.1]);
             material = Material(1,0.3,1);
             dofs_per_ele = 0;
             dofs_per_node = 5;
-            f = @(ele) Physics.K(ele,material,2);
+            f = @(ele) Physics.K_Shell(ele,material,2);
+            S = mesh.assembly(dofs_per_node,dofs_per_ele,f);
+            % Nodes 4 and 6 should not have any coupling
+            dofs_4 = index_range(dofs_per_node,4);
+            dofs_6 = index_range(dofs_per_node,6);
+            testCase.verifyEqual(zeros(dofs_per_node),S(dofs_4,dofs_6));
+            % Nodes 1 and 3 should not have any coupling
+            dofs_1 = index_range(dofs_per_node,1);
+            dofs_3 = index_range(dofs_per_node,3);
+            testCase.verifyEqual(zeros(dofs_per_node),S(dofs_1,dofs_3));
+            % Nodes 1 and 4 should be coupled
+            testCase.verifyEqual(true,any(any(S(dofs_1,dofs_4))));
+            % Nodes 3 and 6 should be coupled
+            testCase.verifyEqual(true,any(any(S(dofs_3,dofs_6))));
+        end
+        function AssemblyBasicTest(testCase)
+            % Tests the assembly function using only one element
+            mesh = Factory.ShellMesh([1,1],[1,1,0.1]);
+            material = Material(1,0.3,1);
+            dofs_per_ele = 0;
+            dofs_per_node = 5;
+            f = @(ele) Physics.K_Shell(ele,material,2);
             S = mesh.assembly(dofs_per_node,dofs_per_ele,f);
             K = f(mesh.ele(1));
             testCase.verifyEqual(K,S);
         end
         function ShellMeshTest(testCase)
-            [coords, connect, node_normals] = Factory.Shell([1,1],[1,1,0.1]);
-            mesh = Mesh(coords,connect,node_normals);
+            mesh = Factory.ShellMesh([1,1],[1,1,0.1]);
             % Check basic properties
             testCase.verifyEqual(4,mesh.n_nodes);
             testCase.verifyEqual(1,mesh.n_ele);

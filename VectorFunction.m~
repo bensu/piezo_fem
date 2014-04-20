@@ -2,26 +2,26 @@ classdef VectorFunction < hgsetget
     properties
         vals
         dofs_per_val
-        n_vals
+        n_val
         zero_val
     end
     properties (Dependent)
         all_dofs
     end
     methods
-        function obj = VectorFunction(filler,n_vals_in, dofs_per_val_in)
+        function obj = VectorFunction(filler,n_val_in, dofs_per_val_in)
             % Always stored in val and element function
-            val_list_in = repmat(filler,n_vals_in,dofs_per_val_in);
+            val_list_in = repmat(filler,n_val_in,dofs_per_val_in);
             obj.set('dofs_per_val',dofs_per_val_in)
             obj.set('vals',val_list_in)
-            obj.set('n_vals',n_vals_in)
+            obj.set('n_val',n_val_in)
             obj.set('zero_val',filler);
         end
         
         %% I/O
         function dof_list_in(fun,component_list)
             fun_in = reshape(component_list,fun.get('dofs_per_val'), ...
-                        fun.get('n_vals'))';
+                        fun.get('n_val'))';
             fun.set('vals',fun_in);
         end
         function vectors_out = component_list(fun)
@@ -35,15 +35,12 @@ classdef VectorFunction < hgsetget
         function set_val(vf,places,value)
             % Sets all the values where places is true to value
             for v = 1:vf.n_vals
-                if places(v)
-                    vf.vals(v,:) = value;
-                end
-            end
+                vf.vals(places(n,:) = value;
         end
         function clear(vector_fun)
             filler = vector_fun.get('zero_val');
             vector_fun.set('vals',repmat(filler, ...
-                vector_fun.get('n_vals'), ...
+                vector_fun.get('n_val'), ...
                 vector_fun.get('dofs_per_val')));
         end
         function edit_component_by_id(vector,component_id,vector_in)
@@ -65,7 +62,7 @@ classdef VectorFunction < hgsetget
         %% Helpers
         function num = number_of_dofs(vector_fun)
             num = vector_fun.get('dofs_per_val')* ...
-                        vector_fun.get('n_vals');
+                        vector_fun.get('n_val');
             if isempty(num)
                 num = 0;
             end

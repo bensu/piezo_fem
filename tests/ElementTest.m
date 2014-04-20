@@ -1,11 +1,11 @@
-classdef ElementTestSuite < matlab.unittest.TestCase
+classdef ElementTest < matlab.unittest.TestCase
     methods (Test)
         function K_Mech(testCase)
             a = 1;
             [coords, ~, node_normals] = Factory.Shell([1,1],[a,a,a]);
             ele = Element(coords,node_normals);
             material = Material(1,0.3,1);
-            K = Physics.K(ele,material,2);
+            K = Physics.K_Shell(ele,material,2);
             is_symmetric = @(x) all(all(abs(x-x.')<1e-5));
             testCase.verifyEqual(true,is_symmetric(K));
             % There should be a decoupling of some dofs for a perfect

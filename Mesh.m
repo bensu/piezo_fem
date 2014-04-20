@@ -43,6 +43,20 @@ classdef Mesh
                 K(dofs,dofs) = K(dofs,dofs) + fun_in(ele);
             end
         end
+        function nodes = find_nodes(mesh,condition)
+            % nodes = find_nodes(fun_in)
+            % nodes [n_nodes x 1][Bool]
+            % condition [FHandle][(x,y,z) -> Bool]
+            % Returns a logical matrix where the true-valued nodes satisfy
+            % the condition
+            nodes = false(mesh.n_nodes,1);
+            for n = 1:mesh.n_nodes
+                x = mesh.coords(n,1);
+                y = mesh.coords(n,2);
+                z = mesh.coords(n,3);
+                nodes(n) = condition(x,y,z);
+            end
+        end
         %% DOF helpers
         function dofs = all_eles_dofs(mesh,dofs_per_node,dofs_per_ele,ele_id)
             % eles_dofs(mesh,dofs_per_node,dofs_per_ele,ele_id)
