@@ -1,6 +1,27 @@
 classdef Integration
     methods (Static)
-        function mat_out = Volume_3D(fun_in,fun_size,order,interval)
+        function mat_out = Volume3D(fun_in,fun_size,order,interval)
+            % mat_out = Volume3D(fun_in,fun_size,order,interval)
+            % mat_out [fun_size,fun_size]
+            % fun_in [Fhandle] function(xi,eta,mu) to be integrated
+            % order [Int][>0] Gauss integration
+            % interval [1x2][Float] Cube sides for integration
+            require(isnumeric(order), ...
+                'ArgumentError: order should be numeric');
+            require(order > 0, ...
+                'ArgumentError: order should be > 0');
+            require(~mod(order,1), ...
+                'ArgumentError: order should be integer');
+            require(length(interval)==2, ...
+                'ArgumentError: interval should have two numbers');
+            require(isnumeric(interval), ...
+                'ArgumentError: interval should be numeric');
+            require(isnumeric(fun_size), ...
+                'ArgumentError: fun_size should be numeric');
+            require(fun_size > 0, ...
+                'ArgumentError: fun_size should be > 0');
+            require(~mod(fun_size,1), ...
+                'ArgumentError: fun_size should be integer');
             [gauss_p,gauss_w] = Integration.lgwt(order,interval(1),interval(2));     % sampling points & weights
             mat_out = zeros(fun_size); % Initialization of Matrix
             % Numerical integration
@@ -18,11 +39,14 @@ classdef Integration
                         % sampling point in y-axis
                         eta = gauss_p(int_eta,1);
                         % weight in y-axis
-                        wty = gauss_we(int_eta,1);  
-                        mat_out = fun_in(xi,eta,mu);
+                        wty = gauss_w(int_eta,1);
+                        aux = fun_in(xi,eta,mu);
+                        mat_out = mat_out + wtx*wty*wtz*aux;
                     end
                 end
-            end                      % end of numerical integration loop for bending term
+            end
+            require(all(size(mat_out)==fun_size), ...
+                            'ArgumentError: fun_size and fun_in should match')
         end
         function [x,w] = lgwt(N,a,b)
             % lgwt.m

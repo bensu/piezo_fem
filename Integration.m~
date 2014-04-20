@@ -1,6 +1,54 @@
 classdef Integration
-    methods (Static) 
-        function [x,w]=lgwt(N,a,b)
+    methods (Static)
+        function mat_out = Volume3D(fun_in,fun_size,order,interval)
+            % mat_out = Volume3D(fun_in,fun_size,order,interval)
+            % mat_out [fun_size,fun_size]
+            % fun_in [Fhandle] function(xi,eta,mu) to be integrated
+            % order [Int][>0] Gauss integration
+            % interval [1x
+            require(isnumeric(order), ...
+                'ArgumentError: order should be numeric');
+            require(order > 0, ...
+                'ArgumentError: order should be > 0');
+            require(~mod(order,1), ...
+                'ArgumentError: order should be integer');
+            require(length(interval)==2, ...
+                'ArgumentError: interval should have two numbers');
+            require(isnumeric(interval), ...
+                'ArgumentError: interval should be numeric');
+            require(isnumeric(fun_size), ...
+                'ArgumentError: fun_size should be numeric');
+            require(fun_size > 0, ...
+                'ArgumentError: fun_size should be > 0');
+            require(~mod(fun_size,1), ...
+                'ArgumentError: fun_size should be integer');
+            [gauss_p,gauss_w] = Integration.lgwt(order,interval(1),interval(2));     % sampling points & weights
+            mat_out = zeros(fun_size); % Initialization of Matrix
+            % Numerical integration
+            for int_mu = 1:order
+                % sampling point in z-axis
+                mu = gauss_p(int_mu,1);
+                % weight in z-axis
+                wtz = gauss_w(int_mu,1);
+                for int_xi = 1:order
+                    % sampling point in x-axis
+                    xi = gauss_p(int_xi,1);
+                    % weight in x-axis
+                    wtx = gauss_w(int_xi,1);	
+                    for int_eta= 1:order
+                        % sampling point in y-axis
+                        eta = gauss_p(int_eta,1);
+                        % weight in y-axis
+                        wty = gauss_w(int_eta,1);
+                        aux = fun_in(xi,eta,mu);
+                        mat_out = mat_out + wtx*wty*wtz*aux;
+                    end
+                end
+            end
+            require(all(size(mat_out)==fun_size), ...
+                            'ArgumentError: fun_size and fun_in should match')
+        end
+        function [x,w] = lgwt(N,a,b)
             % lgwt.m
             %
             % This script is for computing definite integrals using Legendre-Gauss
@@ -15,15 +63,11 @@ classdef Integration
             % Written by Greg von Winckel - 02/25/2004
             N=N-1;
             N1=N+1; N2=N+2;
-            
             xu=linspace(-1,1,N1)';
-            
             % Initial guess
             y=cos((2*(0:N)'+1)*pi/(2*N+2))+(0.27/N1)*sin(pi*xu*N/N2);
-            
             % Legendre-Gauss Vandermonde Matrix
             L=zeros(N1,N2);
-            
             % Derivative of LGVM
             Lp=zeros(N1,N2);
             % Compute the zeros of the N+1 Legendre Polynomial

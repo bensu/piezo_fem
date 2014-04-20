@@ -1,13 +1,22 @@
 classdef Physics
     methods (Static)
-        function K = K(element,material,integration_order)
-        % K [20x20] Stiffness as calculated in Cook 361 12.4-14
+        function K = K(element,material,order)
+        % K [20x20][Float] Stiffness as calculated in Cook 361 12.4-14
+        % element [Element]: Requires methods jacobian and B
+        % material[Material]: Requires methods E and nu
+        % order [Int]: Gauss integration order
             C = Physics.IsoElastic(material);
-            jacobian = element.jacobian(xi,eta,mu);           % compute Jacobian
-            B = Physics.B(element,xi,eta,mu);            % kinematic matrix for stiffness
-            K = K + B'*C*B*wtx*wty*wtz*det(jacobian);
-            % POSIBLE ERROR: va con t multiplicando?
-            % k = k+(t)*B'*D*B*wtx*wty*det(jacobian);
+            function out = K_in_point(xi,eta,mu)
+                % Compute Jacobian
+                jacobian = element.jacobian(xi,eta,mu);
+                % Linematic matrix for stiffness
+                B = Physics.B(element,xi,eta,mu);            
+                out = B'*C*B*det(jacobian);
+                % POSIBLE ERROR: va con t multiplicando?
+                % B'*D*B*wtx*wty*det(jacobian);
+            end
+            fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
+            K = Integration.Volume3D(fun_in,20,order,[-1 1]);
         end
         function C = IsoElastic(material)
             % Computes the Elastic Tensor in matrix form for an Isotropic
