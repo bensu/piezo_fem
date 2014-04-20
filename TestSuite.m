@@ -4,7 +4,13 @@ classdef TestSuite < matlab.unittest.TestCase
             a = 1;
             [coords, ~, node_normals] = Factory.Shell([1,1],[a,a,a]);
             ele = Element(coords,node_normals);
-            Physics.K(ele,material,2);
+            material = Material(1,0.3,1);
+            K = Physics.K(ele,material,2);
+            is_symmetric = @(x) all(all(abs(x-x.')<1e-5));
+            testCase.verifyEqual(true,is_symmetric(K));
+            % There should be a decoupling of some dofs for a perfect
+            % element
+            testCase.verifyEqual(zeros(4),K(1:5:end,3:5:end));
         end
         function B_Mech(testCase)
             a = 1;

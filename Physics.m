@@ -1,5 +1,27 @@
 classdef Physics
     methods (Static)
+        function K = K(element,material,integration_order)
+        % K [20x20] Stiffness as calculated in Cook 361 12.4-14
+            C = Physics.IsoElastic(material);
+            jacobian = element.jacobian(xi,eta,mu);           % compute Jacobian
+            B = Physics.B(element,xi,eta,mu);            % kinematic matrix for stiffness
+            K = K + B'*C*B*wtx*wty*wtz*det(jacobian);
+            % POSIBLE ERROR: va con t multiplicando?
+            % k = k+(t)*B'*D*B*wtx*wty*det(jacobian);
+        end
+        function C = IsoElastic(material)
+            % Computes the Elastic Tensor in matrix form for an Isotropic
+            % material
+            E = material.E;
+            nu = material.nu;
+            C = E/((1+nu)*(1-2*nu))* ...
+                    [1-nu   nu      nu      0          0          0
+                    nu      1-nu	nu      0          0          0
+                    nu      nu      1-nu    0          0          0
+                    0       0       0       (1-2*nu)/2 0          0
+                    0       0       0       0          (1-2*nu)/2 0
+                    0       0       0       0          0          (1-2*nu)/2];
+        end
         function B_out = B(element,xi,eta,mu)
             % B_out [6x20] Computes B matix - Cook 361 12.5-10
             % B = H*T_j*N_devs
