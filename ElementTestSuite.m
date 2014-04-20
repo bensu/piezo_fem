@@ -1,4 +1,4 @@
-classdef TestSuite < matlab.unittest.TestCase
+classdef ElementTestSuite < matlab.unittest.TestCase
     methods (Test)
         function K_Mech(testCase)
             a = 1;
@@ -105,30 +105,6 @@ classdef TestSuite < matlab.unittest.TestCase
             % We check that there is only one 1 in the series
             testCase.verifyEqual(true,all(magnitude==1));
             testCase.verifyEqual(true,all(value));
-        end
-        function ShellFactoryTest(testCase)
-            [coords, connect, node_normals] = Factory.Shell([1,1],[1,1,0.1]);
-            % Extract basic properties.
-            [n_nodes, dim] = size(coords);
-            [n_ele, nodes_per_ele] = size(connect);
-            % Compare them to expected results.
-            testCase.verifyEqual(4,n_nodes);
-            testCase.verifyEqual(1,n_ele);
-            testCase.verifyEqual(3,dim);
-            testCase.verifyEqual(4,nodes_per_ele);
-            testCase.verifyEqual(size(node_normals),size(coords));
-        end
-        function BoxFactoryTest(testCase)
-            % Generate simplest box
-            [coords, connect] = Factory.Box([1,1,1],[1,1,1]);
-            % Extract basic properties.
-            [n_nodes, dim] = size(coords);
-            [n_ele, nodes_per_ele] = size(connect);
-            % Compare them to expected results.
-            testCase.verifyEqual(8,n_nodes);
-            testCase.verifyEqual(1,n_ele);
-            testCase.verifyEqual(3,dim);
-            testCase.verifyEqual(8,nodes_per_ele);
         end
     end
 end

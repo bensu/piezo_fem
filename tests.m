@@ -1,5 +1,8 @@
 clc
 clear all
 
-suite = TestSuite;
-run(suite)
+ele_suite = ElementTestSuite;
+run(ele_suite)
+
+mesh_suite = MeshTestSuite;
+run(mesh_suite)
