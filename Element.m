@@ -60,8 +60,8 @@ classdef Element
             mu_out = zeros(3,2,node_num);
             for node = 1:node_num
                 mu_out(:,2,node) = V1(:,node)/norm(V1(:,node)); 
-                aux = cross(V3(:,node),mu_out(:,2,node));
-                mu_out(:,1,node) = -aux/norm(aux);
+                V2 = cross(V3(:,node),mu_out(:,2,node));
+                mu_out(:,1,node) = -V2/norm(V2);
             end
         end
         function out = get.n_nodes(element)

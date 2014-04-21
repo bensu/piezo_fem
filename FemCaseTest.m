@@ -51,8 +51,8 @@ classdef FemCaseTest < matlab.unittest.TestCase
             PlotMesh(mesh.coords + 1000*fem.dis.node_vals.vals(:,1:3), ...
                 mesh.connect, ...
                 fem.bc.node_vals.vals, ...
-                            fem.loads.node_vals.vals);
-            fem.dis.node_vals.vals
+                            fem.reactions.node_vals.vals);
+            fem.dis.node_vals.vals;
             max_dis = max(fem.dis.all_dofs)
             min_dis = min(fem.dis.all_dofs)
             testCase.verifyEqual(true,near(expected_dz,max_dis));

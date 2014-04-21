@@ -47,16 +47,31 @@ classdef Physics
                     0       0       0       0          (1-2*nu)/2 0
                     0       0       0       0          0          (1-2*nu)/2];
         end
+        function C = ElasticPlainStress(material)
+            % Computes the Elastic Tensor in matrix form for an Isotropic
+            % material
+            E = material.E;
+            nu = material.nu;
+            aux = E/(1-nu^2)* ...
+                    [1  nu  nu
+                     nu 1   nu
+                     nu nu  1];
+            C = blkdiag(aux,0.5*E*(1+nu)*eye(3));
+        end
         function C = ElasticShell(material)
-            C = Physics.Elastic(material);
+            % Returns the Elastic Tensor for Plain Stress in a shell
+            % Cook pg 361 12.5-12
+            C = Physics.ElasticPlainStress(material);
             C(3,:) = 0;
-            C(:,3) = 0;            
+            C(:,3) = 0;
+            C(5,5) = (5/6)*C(5,5);
+            C(6,6) = (5/6)*C(6,6);
         end
         function B_out = B(element,xi,eta,mu)
             % B_out [6x20] Computes B matix - Cook 361 12.5-10
             % B = H*T_j*N_devs
             B_out = Physics.H*Physics.invT(element,xi,eta,mu)*...
-                                Physics.Ndevs(element,xi,eta,mu);
+                                Physics.NdevsShell(element,xi,eta,mu);
         end     
         function H_out = H
             % H_out = H
@@ -70,7 +85,7 @@ classdef Physics
             inv_jac = inv(element.jacobian(xi,eta,mu));
             T_out = blkdiag(inv_jac,inv_jac,inv_jac);
         end
-        function Ndevs_out = Ndevs(element,xi,eta,mu)
+        function Ndevs_out = NdevsShell(element,xi,eta,mu)
             % Ndevs_out = Ndevs(element,xi,eta,mu)
             % Ndevs_out [9x20] Cook pg 360 12.5-9 from Dofs U_i to diffU
             % It belongs in Physics because it contains the way the 
@@ -84,6 +99,11 @@ classdef Physics
             N = Element.N_Q4(xi,eta);
             mu_mat = element.mu_matrix;
             Ndevs_out = zeros(dim^2,n_nodes*ndofs);
+            % The matrix in Cook is specified for one node with subscript i
+            % The loop with 'node' computes each node matrix in aux, and then
+            % stores it in Ndevs_out
+            % The loop with 'j' computes aux every 3 rows, which correspond
+            % to u, then v, and then w.
             for node = 1:n_nodes
                 aux = zeros(dim^2,ndofs);
                 for j = 1:dim

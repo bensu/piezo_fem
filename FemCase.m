@@ -36,12 +36,16 @@ classdef FemCase < handle
                                   fem.physics.dofs_per_ele,  ...
                                   fem.physics.k);
             D = zeros(size(S,1),1);
-            D(F,1) = S(F,F) \ L(F);
+            D(F) = S(F,F) \ L(F);
             fem.dis.dof_list_in(D);
-            fem.reactions.dof_list_in(S*D);
-            sum(fem.reactions.node_vals.vals)
+            R = zeros(size(S,1),1);
+%             R(F) = S(F,F) * D(F);
+            R = S * D;
+            fem.reactions.dof_list_in(R);
+            edge = fem.mesh.find_nodes(@(x,y,z) (abs(x)<1e-5));
+            fem.reactions.node_vals.vals(edge,3)
+            sum(abs(fem.reactions.node_vals.vals))
             sum(fem.loads.node_vals.vals)
-            max(fem.dis.node_vals.vals(:,1))
         end
     end
 end

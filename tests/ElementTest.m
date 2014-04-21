@@ -40,7 +40,7 @@ classdef ElementTest < matlab.unittest.TestCase
             for xi = [-1,1]
                 for eta = [-1,1]
                     for mu = [-1,1]
-                        devs = Physics.Ndevs(ele,xi,eta,mu);
+                        devs = Physics.NdevsShell(ele,xi,eta,mu);
                         right_size = right_size && ...
                             all(([9, 20] == size(devs)));
                         last_row_zero = last_row_zero && ...
