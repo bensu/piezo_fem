@@ -34,7 +34,7 @@ classdef Physics
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,20,order,[-1 1]);
         end
-        function C = ElasticShell(material)
+        function C = Elastic(material)
             % Computes the Elastic Tensor in matrix form for an Isotropic
             % material
             E = material.E;
@@ -46,6 +46,11 @@ classdef Physics
                     0       0       0       (1-2*nu)/2 0          0
                     0       0       0       0          (1-2*nu)/2 0
                     0       0       0       0          0          (1-2*nu)/2];
+        end
+        function C = ElasticShell(material)
+            C = Physics.Elastic(material);
+            C(3,:) = 0;
+            C(:,3) = 0;            
         end
         function B_out = B(element,xi,eta,mu)
             % B_out [6x20] Computes B matix - Cook 361 12.5-10
