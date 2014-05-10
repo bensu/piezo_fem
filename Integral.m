@@ -132,7 +132,7 @@ classdef Integral
                     %         w  = [wa wb wc wc wb wa];
             end
         end
-        function mat_out = Volume3D(fun_in,fun_size,order,interval)
+        function mat_out = Volume3D(fun_in,order,interval)
             % mat_out = Volume3D(fun_in,fun_size,order,interval)
             % mat_out [fun_size,fun_size]
             % fun_in [Fhandle] function(xi,eta,mu) to be integrated
@@ -148,14 +148,8 @@ classdef Integral
                 'ArgumentError: interval should have two numbers');
             require(isnumeric(interval), ...
                 'ArgumentError: interval should be numeric');
-            require(isnumeric(fun_size), ...
-                'ArgumentError: fun_size should be numeric');
-            require(fun_size > 0, ...
-                'ArgumentError: fun_size should be > 0');
-            require(~mod(fun_size,1), ...
-                'ArgumentError: fun_size should be integer');
             [gauss_p,gauss_w] = Integral.lgwt(order,interval(1),interval(2));     % sampling points & weights
-            mat_out = zeros(fun_size); % Initialization of Matrix
+            mat_out = zeros(size(fun_in(0,0,0))); % Initialization of Matrix
             % Numerical integration
             for int_mu = 1:order
                 % sampling point in z-axis
@@ -172,13 +166,10 @@ classdef Integral
                         eta = gauss_p(int_eta,1);
                         % weight in y-axis
                         wty = gauss_w(int_eta,1);
-                        aux = fun_in(xi,eta,mu);
-                        mat_out = mat_out + wtx*wty*wtz*aux;
+                        mat_out = mat_out + wtx*wty*wtz*fun_in(xi,eta,mu);
                     end
                 end
             end
-            require(all(size(mat_out)==fun_size), ...
-                            'ArgumentError: fun_size and fun_in should match')
         end
         function [x,w] = lgwt(N,a,b)
             % lgwt.m

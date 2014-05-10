@@ -16,32 +16,19 @@ classdef Physics
         end
     end
     methods (Static)
-%         function K = K(element,material,order)
-%             dofs_per_node = 5;
-%             K = zeros(dofs_per_node*nodes_per_ele);
-%             elecoords = mesh.connect(iele,:);    % Element's node
-%             v = mesh.normals(:,:,elecoords);     % Direction vectors from iele's coords
-%             v3 = squeeze(v(:,3,:));         % v3 of iele's coords
-%             tEle = t(elecoords);             % Thickness at those coords
-%             nodalCoords = coords_in(elecoords,:);
-%             % Integrate Ks with #ng gauss points
-%             for ig = 1:ng
-%                 ksi  = gpts(ig,1);
-%                 eta  = gpts(ig,2);
-%                 zeta = gpts(ig,3);
-% 
-%                 jac = Element.shelljac(eleType,nodalCoords,tEle,v3,ksi,eta,zeta);
-%                 dJac = det(jac);
-% 
-%                 B = Element.B(eleType,dofs_per_node,nodalCoords,tEle,v,ksi,eta,zeta);
-%                 T = Element.T(jac);
-% 
-%                 B = T*B;    % Cook [7.3-10]
-%                 % Integration.
-%                 K = K + B'*D*B*dJac*wgauss(ig);
-%             end
-%             eleDofs = node2dof(elecoords,dofs_per_node);
-%         end
+        function K = K_Shell2(element,material,order)
+            C = Physics.ElasticShell(material);
+            function K_in_point = K_in_point(ksi,eta,zeta)
+                jac = element.shelljac(ksi,eta,zeta);
+                B = element.B(5,ksi,eta,zeta);
+                T = Element.T(jac);
+                B = T*B;    % Cook [7.3-10]
+%                 K_in_point = B'*C*B*dJac*wgauss(ig);
+                K_in_point = B'*C*B*det(jac);
+            end
+            fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
+            K = Integral.Volume3D(fun_in,order,[-1 1]);
+        end
         function K = K_Shell(element,material,order)
         % K [20x20][Float] Stiffness as calculated in Cook 361 12.4-14
         % element [Element]: Requires methods jacobian and B
@@ -58,7 +45,7 @@ classdef Physics
                 % B'*D*B*wtx*wty*det(jacobian);
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
-            K = Integral.Volume3D(fun_in,20,order,[-1 1]);
+            K = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function C = Elastic(material)
             % Computes the Elastic Tensor in matrix form for an Isotropic
@@ -88,10 +75,10 @@ classdef Physics
             % Returns the Elastic Tensor for Plain Stress in a shell
             % Cook pg 361 12.5-12
             C = Physics.ElasticPlainStress(material);
-            C(3,:) = 0;
-            C(:,3) = 0;
             C(5,5) = (5/6)*C(5,5);
             C(6,6) = (5/6)*C(6,6);
+            C(3,:) = [];
+            C(:,3) = [];
         end
         function B_out = B(element,xi,eta,mu)
             % B_out [6x20] Computes B matix - Cook 361 12.5-10
