@@ -16,6 +16,16 @@ classdef Physics
         end
     end
     methods (Static)
+        function L = apply_load(element,order,q)
+            
+            function L_out = apply_load_in_point(ksi,eta,zeta)
+                [~,NN]  = Element.shapefuns([ksi,eta],element.type);
+                jac = element.shelljac(ksi,eta,zeta);
+                L_out = NN'*det(jac)*q;
+            end
+            fun_in = @(xi,eta,mu) (apply_load_in_point(xi,eta,mu));
+            L = Integral.Volume3D(fun_in,order,[-1 1]);
+        end
         function K = K_Shell2(element,material,order)
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(ksi,eta,zeta)

@@ -4,11 +4,12 @@ close all
 
 %% IMPORT MESH
 
-eleType = 'AHMAD9';
+ele_type = 'AHMAD9';
 n = 10;
-switch eleType
+switch ele_type
     case 'AHMAD9'
         nodes_per_ele = 9;
+        % vdof: DOFs in K that are not rotational
         vdof = [1:3 6:8 11:13 16:18 21:23 26:28 31:33 36:38 41:43];
         coords_in = load(['tests/scordelis/nodos' num2str(n) '_9.txt']);
         connect_in = load(['tests/scordelis/elementos' num2str(n) '_9.txt']);
@@ -36,7 +37,7 @@ connect_in = reshape(connect_in,[],nodes_per_ele);
 to = 0.0025;
 t = to*ones(1,size(coords_in,1));
 
-mesh = Mesh(eleType,coords_in,connect_in,t);
+mesh = Mesh(ele_type,coords_in,connect_in,t);
 dofs_per_node = 5;                      % Dofs per Node
 dofs_per_ele = 0;
 n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
@@ -56,54 +57,16 @@ bc(coords_in(:,1) > 25 - tol,[1 5]) = true;  % simetría transversal
 
 %% PHYSICAL PROPERTIES
 
+
 E = 4.32E8;
 nu = 0.0;
-D1 = E/(1 - nu^2);
-G = 0.5*E/(1 + nu);
-c = 5/6;
-D = [    D1 nu*D1  0   0   0
-      nu*D1    D1  0   0   0
-          0     0  G   0   0
-          0     0  0 c*G   0
-          0     0  0   0 c*G ];
+material = Material(E,nu,1);
 
-%% Matriz de rigidez
-K = zeros(n_dofs);
+%% Assembly
 
-%% Flexión y membrana
-% Puntos y pesos de Gauss
-% How many gauss points along each direction?
-rstInt = 3*ones(1,3);
-[wgauss, gpts, ng] = Integral.gauss(rstInt);
-% wgauss:   Gauss Weights
-% gpts:     Evaluation points for each coordinates
-% ng:       Number of evaluation points
+fun_in = @(element) Physics.K_Shell2(element,material,3);
+K = mesh.assembly_matrix(dofs_per_node,dofs_per_ele,fun_in);
 
-% Loop through all mesh.connect, computing their stiffness matrix
-for iele = 1:mesh.n_ele
-    Ks = zeros(dofs_per_node*nodes_per_ele);
-    element = mesh.ele(eleType,iele);
-    elecoords = mesh.connect(iele,:);    % Element's node
-% 
-    % Integrate Ks with #ng gauss points
-    for ig = 1:ng
-        ksi  = gpts(ig,1);
-        eta  = gpts(ig,2);
-        zeta = gpts(ig,3);
-        jac = element.shelljac(ksi,eta,zeta);
-%         jac = Element.shelljac(eleType,nodalCoords,tEle,v3,ksi,eta,zeta);
-        dJac = det(jac);
-
-        B = element.B(dofs_per_node,ksi,eta,zeta);
-        T = Element.T(jac);
-        
-        B = T*B;    % Cook [7.3-10]
-        % Integration.
-        Ks = Ks + B'*D*B*dJac*wgauss(ig);
-    end
-    eleDofs = node2dof(elecoords,dofs_per_node);
-    K(eleDofs,eleDofs) = K(eleDofs,eleDofs) + Ks;
-end
 
 %% Vector de cargas
 
@@ -112,27 +75,15 @@ rstInt = 3*ones(1,3);
 [wgauss, gpts, ng] = Integral.gauss(rstInt);
 
 R = zeros(n_dofs,1);
-b = [0 0 -360]';
-for iele = 1:mesh.n_ele
-    re = zeros((dofs_per_node - 2)*nodes_per_ele,1);
-    element = mesh.ele(eleType,iele);
-    elecoords = mesh.connect(iele,:);
-    v = mesh.normals(:,:,elecoords);
-    v3 = squeeze(v(:,3,:));
-    tEle = t(elecoords);
-    nodalCoords = coords_in(elecoords,:);
-    for ig = 1:ng
-        ksi  = gpts(ig,1);
-        eta  = gpts(ig,2);
-        zeta = gpts(ig,3);
-        [N,NN]  = Element.shapefuns([ksi,eta],eleType);
-        dN = Element.shapefunsder([ksi,eta],eleType);
-        jac = element.shelljac(ksi,eta,zeta);
-%         jac = Element.shelljac(N,dN,zeta,nodalCoords,tEle,v3);
-        dJac = det(jac);
+q = [0 0 -360]';
 
-        re = re + NN'*dJac*wgauss(ig)*b;
-    end
+% mesh.assembly1D(dofs_per_node,dofs_per_ele,fun_in);
+% Assembly
+for iele = 1:mesh.n_ele
+%     re = zeros((dofs_per_node - 2)*nodes_per_ele,1);
+    element = mesh.ele(iele);
+    elecoords = mesh.connect(iele,:);
+    re = Physics.apply_load(element,3,q);
     eleDofs = node2dof(elecoords,dofs_per_node);
     R(eleDofs(vdof)) = R(eleDofs(vdof)) + re;
 end

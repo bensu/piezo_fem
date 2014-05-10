@@ -4,6 +4,7 @@ classdef Mesh
         connect
         normals
         thickness
+        ele_type
     end
     properties (Dependent)
         n_nodes
@@ -53,7 +54,7 @@ classdef Mesh
         end
     end
     methods
-        function obj = Mesh(eleType,coords,connect,thickness_in)
+        function obj = Mesh(ele_type,coords,connect,thickness_in)
             % obj = Mesh(coords,connect,node_normals)
             % Sanity Checks
             require(isnumeric(coords) && isnumeric(connect), ...
@@ -63,13 +64,31 @@ classdef Mesh
             require(max(max(connect))==size(coords,1), ...
                 'ArgumentError: biggest node in connect should be size coords')
             % Setting variables
+            obj.ele_type = ele_type;
             obj.coords = coords;
             obj.connect = connect;
-            obj.normals = Mesh.nodal_systems(eleType,coords,connect);
+            obj.normals = Mesh.nodal_systems(ele_type,coords,connect);
             obj.thickness = thickness_in;
         end
-        function K = assembly(mesh,dofs_per_node,dofs_per_ele,fun_in)
-            % K = assembly(mesh,dofs_per_node,dofs_per_ele,fun_in)
+        function L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
+            % K = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
+            % K [n_dofs x n_dofs]
+            % dofs_per_node [Int]
+            % dofs_per_ele [Int]
+            % fun_in [Fhandle] f(element) -> [dofs_per_ele x 1]
+            % fun_in follows convention [node_dofs ele_dofs]
+            require(all(~mod([dofs_per_node,dofs_per_ele],1)), ...
+                'ArgumentError: dofs should be integers');
+            L = zeros(mesh.n_dofs(dofs_per_node,dofs_per_ele),1);
+            % Loop through elements
+            for e = 1:mesh.n_ele
+                ele = mesh.ele(e);
+                dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,e);
+                L(dofs) = L(dofs) + fun_in(ele);
+            end
+        end
+        function K = assembly_matrix(mesh,dofs_per_node,dofs_per_ele,fun_in)
+            % K = assembly_matrix(mesh,dofs_per_node,dofs_per_ele,fun_in)
             % K [n_dofs x n_dofs]
             % dofs_per_node [Int]
             % dofs_per_ele [Int]
@@ -78,6 +97,7 @@ classdef Mesh
             require(all(~mod([dofs_per_node,dofs_per_ele],1)), ...
                 'ArgumentError: dofs should be integers');
             K = zeros(mesh.n_dofs(dofs_per_node,dofs_per_ele));
+            % Loop through elements
             for e = 1:mesh.n_ele
                 ele = mesh.ele(e);
                 dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,e);
@@ -136,13 +156,13 @@ classdef Mesh
             out = mesh.n_nodes*dofs_per_node;
         end
         %% Element Helpers
-        function ele = ele(mesh,type,ele_id)
+        function ele = ele(mesh,ele_id)
             % ele = ele(mesh,ele_id)
             % ele [Element]
             % Create element with ID ele_id from the mesh
             nodes = mesh.ele_nodes(ele_id);
 %             v = mesh.normals(:,:,elecoords);     % Direction vectors from iele's coords
-            ele = Element(type,mesh.coords(nodes,:),mesh.normals(:,:,nodes), ...
+            ele = Element(mesh.ele_type,mesh.coords(nodes,:),mesh.normals(:,:,nodes), ...
                             mesh.thickness(nodes));
         end
         function node_ids = ele_nodes(mesh,ele_id)
