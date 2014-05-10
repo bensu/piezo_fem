@@ -1,0 +1,136 @@
+ 
+PARAMETER R '25'
+     *** Parameter R = 25
+PARAMETER L '25'
+     *** Parameter L = 25
+PARAMETER t '0.025'
+     *** Parameter T = 0.0250000000000000
+PARAMETER a '40'
+     *** Parameter A = 40
+ 
+PARAMETER rho '360'
+     *** Parameter RHO = 360
+PARAMETER nu '0.0'
+     *** Parameter NU = 0
+PARAMETER E '4.3E8'
+     *** Parameter E = 430000000
+ 
+PARAMETER neles  '10'
+     *** Parameter NELES = 10
+PARAMETER nnodos '9'
+     *** Parameter NNODOS = 9
+ 
+COORDINATES POINT SYSTEM=0
+     *** No data input rows are defined yet.
+ENTRIES name x y z
+1  0.00 0.00 $R
+2  0.00 0.00 0.00
+3  0.00 1.00 0.00
+ 
+LINE ARC NAME=1 MODE=3 P1=1 P3=3 CENTER=2 RADIUS=$R ANGLE=$a
+     *** Point coordinates updated.
+     ***WARNING: Keyname 'RADIUS'
+                 Parameter is inactive.
+     *** No data input rows are defined yet.
+SURFACE EXTRUDED NAME=1 LINE=1 DX=$L DY=0 DZ=0
+     *** Point 4 created at end of arc 1.
+     *** Line 1 created (arc).
+     *** No data input rows are defined yet.
+SUBDIVIDE LINE NAME=1 MODE=DIVISIONS NDIV=$neles RATIO=1.0
+     *** Transformation (translation) 1 created.
+     *** Extruded line 2 created between points 1 and 5.
+         ( Edge 2 of surface 1).
+     *** Extruded line 3 created between points 4 and 6.
+         ( Edge 4 of surface 1).
+     *** Transformed (coupled) line 4 created between points 5 and 6.
+         ( Edge 1 of surface 1).
+     *** Subdivision of line 4 updated
+     *** Surface extruded 1 created.
+     *** No data input rows are defined yet.
+SUBDIVIDE LINE NAME=4 MODE=DIVISIONS NDIV=$neles RATIO=1.0
+     *** Subdivision of line 1 updated
+     *** No data input rows are defined yet.
+SUBDIVIDE LINE NAME=2 MODE=DIVISIONS NDIV=$neles RATIO=1.0
+     *** Subdivision of line 4 updated
+     *** No data input rows are defined yet.
+SUBDIVIDE LINE NAME=3 MODE=DIVISIONS NDIV=$neles RATIO=1.0
+     *** Subdivision of line 2 updated
+     *** No data input rows are defined yet.
+ 
+MATERIAL ELASTIC NAME=1,
+                 E=$E,
+                 NU=$nu,
+                 DENSITY=1
+     *** Subdivision of line 3 updated
+     *** Material 1 (Elastic) created.
+ 
+EGROUP SHELL NAME=1,
+             MATERIAL=1,
+             RINT=3,
+             SINT=3,
+             TINT=3,
+             THICKNESS=$t
+     *** Element group 1 (SHELL) created.
+     *** Currently active element group = 1
+ 
+GSURFACE NAME=1 NODES=$nnodos GROUP=1
+     *** No data input rows are defined yet.
+ 
+FIXITY NAME=longSym
+     *** 100 elements ( 1 to 100) of type SHELL generated on surface 1.
+     *** No data input rows are defined yet.
+Y-TRANSLATION
+X-ROTATION
+ 
+FIXITY NAME=transSym
+     *** Fixity LONGSYM successfully created.
+     *** No data input rows are defined yet.
+X-TRANSLATION
+Y-ROTATION
+ 
+FIXITY NAME=apoyo
+     *** Fixity TRANSSYM successfully created.
+     *** No data input rows are defined yet.
+Y-TRANSLATION
+Z-TRANSLATION
+ 
+FIXBOUNDARY LINES
+     *** Fixity APOYO successfully created.
+     *** No data input rows are defined yet.
+1 apoyo
+2 longSym
+4 transSym
+ 
+LOAD MASS-PROPORTIONAL NAME=1,
+                       MAGNITUDE=$rho,
+                       AX=0 AY=0 AZ=-1,
+                       INTERPRETATION=BODY-FORCE
+     *** Line fixities updated.
+     *** Mass-proportional load 1 created.
+ 
+APPLY-LOAD
+     *** No data input rows are defined yet.
+1 MASS-PROPORTIONAL 1 MODEL
+ 
+MASTER SHELNDOF=5
+     *** Applied loads updated.
+     *** Master control parameters for ADINA updated.
+READ END
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Model depiction MESHPLOT00001 successfully updated.
+     *** Mesh window MESHPLOT00001 successfully updated.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Node depiction MESHPLOT00001 successfully updated.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Node depiction MESHPLOT00001 successfully updated.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Node depiction MESHPLOT00001 successfully updated.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Master control parameters for ADINA updated.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Meshplot MESHPLOT00001 successfully created.
+     *** Element thicknesses updated.
+     *** Element thicknesses updated.
