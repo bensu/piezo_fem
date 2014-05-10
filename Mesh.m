@@ -3,6 +3,7 @@ classdef Mesh
         coords
         connect
         normals
+        thickness
     end
     properties (Dependent)
         n_nodes
@@ -52,7 +53,7 @@ classdef Mesh
         end
     end
     methods
-        function obj = Mesh(eleType,coords,connect)
+        function obj = Mesh(eleType,coords,connect,thickness_in)
             % obj = Mesh(coords,connect,node_normals)
             % Sanity Checks
             require(isnumeric(coords) && isnumeric(connect), ...
@@ -65,6 +66,7 @@ classdef Mesh
             obj.coords = coords;
             obj.connect = connect;
             obj.normals = Mesh.nodal_systems(eleType,coords,connect);
+            obj.thickness = thickness_in;
         end
         function K = assembly(mesh,dofs_per_node,dofs_per_ele,fun_in)
             % K = assembly(mesh,dofs_per_node,dofs_per_ele,fun_in)
@@ -134,12 +136,14 @@ classdef Mesh
             out = mesh.n_nodes*dofs_per_node;
         end
         %% Element Helpers
-        function ele = ele(mesh,ele_id)
+        function ele = ele(mesh,type,ele_id)
             % ele = ele(mesh,ele_id)
             % ele [Element]
             % Create element with ID ele_id from the mesh
             nodes = mesh.ele_nodes(ele_id);
-            ele = Element(mesh.coords(nodes,:),mesh.normals(nodes,:));
+%             v = mesh.normals(:,:,elecoords);     % Direction vectors from iele's coords
+            ele = Element(type,mesh.coords(nodes,:),mesh.normals(:,:,nodes), ...
+                            mesh.thickness(nodes));
         end
         function node_ids = ele_nodes(mesh,ele_id)
             % nodes_ids = ele_nodes(mesh,ele_id)

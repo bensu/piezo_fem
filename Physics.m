@@ -16,6 +16,32 @@ classdef Physics
         end
     end
     methods (Static)
+%         function K = K(element,material,order)
+%             dofs_per_node = 5;
+%             K = zeros(dofs_per_node*nodes_per_ele);
+%             elecoords = mesh.connect(iele,:);    % Element's node
+%             v = mesh.normals(:,:,elecoords);     % Direction vectors from iele's coords
+%             v3 = squeeze(v(:,3,:));         % v3 of iele's coords
+%             tEle = t(elecoords);             % Thickness at those coords
+%             nodalCoords = coords_in(elecoords,:);
+%             % Integrate Ks with #ng gauss points
+%             for ig = 1:ng
+%                 ksi  = gpts(ig,1);
+%                 eta  = gpts(ig,2);
+%                 zeta = gpts(ig,3);
+% 
+%                 jac = Element.shelljac(eleType,nodalCoords,tEle,v3,ksi,eta,zeta);
+%                 dJac = det(jac);
+% 
+%                 B = Element.B(eleType,dofs_per_node,nodalCoords,tEle,v,ksi,eta,zeta);
+%                 T = Element.T(jac);
+% 
+%                 B = T*B;    % Cook [7.3-10]
+%                 % Integration.
+%                 K = K + B'*D*B*dJac*wgauss(ig);
+%             end
+%             eleDofs = node2dof(elecoords,dofs_per_node);
+%         end
         function K = K_Shell(element,material,order)
         % K [20x20][Float] Stiffness as calculated in Cook 361 12.4-14
         % element [Element]: Requires methods jacobian and B

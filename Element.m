@@ -1,21 +1,72 @@
 classdef Element
     properties
+        type
         coords
         normals
+        thickness
     end
     properties (Dependent)
         n_nodes
         thickness_at_node
         mu_matrix
+        v3
     end
     methods
-        function obj = Element(coords,normals)
-            require(size(coords,1)==4, ...
-                'ArgumentError: only 4 nodes');
-            require(size(coords)==size(normals), ...
-                'ArgumentError: coords and normals should have same size');
+        function obj = Element(type,coords,normals,t_in)
+%             require(size(coords,1)==4, ...
+%                 'ArgumentError: only 4 nodes');
+%             require(size(coords)==size(normals), ...
+%                 'ArgumentError: coords and normals should have same size');
             obj.coords = coords;
+            obj.thickness = t_in;
             obj.normals = normals;
+            obj.type = type;
+        end
+        function B = B(element,dofs_per_node,ksi,eta,zeta)
+            % Prepare values
+            v = element.normals;
+            N  = Element.shapefuns([ksi,eta],element.type);
+            jac = element.shelljac(ksi,eta,zeta);
+            invJac = jac \ eye(3);
+            dN = invJac(:,1:2)*Element.shapefunsder([ksi,eta],element.type);
+
+            B  = zeros(6,element.n_nodes*dofs_per_node);
+            % B matrix has the same structure for each node and comes from
+            % putting all the B_coords next to each other.
+            % Loop through the mesh.connect coords and get each B_node, then add it
+            % to its columns in the B matrix
+            for inod = 1:element.n_nodes
+                v1 = v(:,1,inod);
+                v2 = v(:,2,inod);
+                dZN = dN(:,inod)*zeta + N(inod)*invJac(:,3);
+                aux1 = [ dN(1,inod)         0          0
+                                 0  dN(2,inod)         0
+                                 0          0  dN(3,inod)
+                         dN(2,inod) dN(1,inod)         0
+                                 0  dN(3,inod) dN(2,inod)
+                         dN(3,inod)         0  dN(1,inod) ];
+
+                aux2 = [ -v2.*dZN                        v1.*dZN
+                         -v2(1)*dZN(2) - v2(2)*dZN(1)    v1(1)*dZN(2) + v1(2)*dZN(1)
+                         -v2(2)*dZN(3) - v2(3)*dZN(2)    v1(2)*dZN(3) + v1(3)*dZN(2)
+                         -v2(1)*dZN(3) - v2(3)*dZN(1)    v1(1)*dZN(3) + v1(3)*dZN(1) ]*0.5*element.thickness(inod);
+                ini = 1 + (inod - 1)*dofs_per_node;
+                fin = ini + dofs_per_node - 1;
+                B(:,ini:fin) = [aux1 aux2];
+            end
+        end
+        function jac = shelljac(element,ksi,eta,zeta)
+            % Computes the jacobian for Shell Elements
+            % Cook [6.7-2] gives Isoparametric Jacobian
+            % Cook [12.5-4] & [12.5-2] gives Shells Derivatives.
+            N  = Element.shapefuns([ksi,eta],element.type);
+            dN = Element.shapefunsder([ksi,eta],element.type);
+            v3 = element.v3;
+            t = element.thickness;
+            tt = [t; t; t];
+            v3t = (v3.*tt)';
+            jac = [ dN*(element.coords + zeta*v3t/2);
+                N*(v3t)/2 ];
         end
         function jac_out = jacobian(element,xi,eta,mu)
             % jac_out = jacobian(element,xi,eta,mu)
@@ -69,6 +120,9 @@ classdef Element
             % Number of nodes in the element
             out = size(element.coords,1);
         end
+        function out = get.v3(element)
+            out = squeeze(element.normals(:,3,:));
+        end
     end
     methods (Static)
         function T = T(jac)
@@ -87,51 +141,6 @@ classdef Element
                   2*M1.*M3  M1.*M4 + M3.*M2 ];
             % Since sigma_zz is ignored, we eliminate the appropriate row.
             T(3,:) = [];
-        end
-        function B = B(eleType,dofs_per_node,nodalCoords,tEle,v,ksi,eta,zeta)
-            % Prepare values
-            v3 = squeeze(v(:,3,:));         % v3 of iele's coords
-            nodes_per_ele = size(nodalCoords,1);
-            N  = Element.shapefuns([ksi,eta],eleType);
-            jac = Element.shelljac(eleType,nodalCoords,tEle,v3,ksi,eta,zeta);
-            invJac = jac \ eye(3);
-            dN = invJac(:,1:2)*Element.shapefunsder([ksi,eta],eleType);
-
-            B  = zeros(6,nodes_per_ele*dofs_per_node);
-            % B matrix has the same structure for each node and comes from
-            % putting all the B_coords next to each other.
-            % Loop through the mesh.connect coords and get each B_node, then add it
-            % to its columns in the B matrix
-            for inod = 1:nodes_per_ele
-                v1 = v(:,1,inod);
-                v2 = v(:,2,inod);
-                dZN = dN(:,inod)*zeta + N(inod)*invJac(:,3);
-                aux1 = [ dN(1,inod)         0          0
-                                 0  dN(2,inod)         0
-                                 0          0  dN(3,inod)
-                         dN(2,inod) dN(1,inod)         0
-                                 0  dN(3,inod) dN(2,inod)
-                         dN(3,inod)         0  dN(1,inod) ];
-
-                aux2 = [ -v2.*dZN                        v1.*dZN
-                         -v2(1)*dZN(2) - v2(2)*dZN(1)    v1(1)*dZN(2) + v1(2)*dZN(1)
-                         -v2(2)*dZN(3) - v2(3)*dZN(2)    v1(2)*dZN(3) + v1(3)*dZN(2)
-                         -v2(1)*dZN(3) - v2(3)*dZN(1)    v1(1)*dZN(3) + v1(3)*dZN(1) ]*0.5*tEle(inod);
-                ini = 1 + (inod - 1)*dofs_per_node;
-                fin = ini + dofs_per_node - 1;
-                B(:,ini:fin) = [aux1 aux2];
-            end
-        end
-        function jac = shelljac(eleType,xyz,t,v3,ksi,eta,zeta)
-            % Computes the jacobian for Shell Elements
-            % Cook [6.7-2] gives Isoparametric Jacobian
-            % Cook [12.5-4] & [12.5-2] gives Shells Derivatives.
-            N  = Element.shapefuns([ksi,eta],eleType);
-            dN = Element.shapefunsder([ksi,eta],eleType);
-            tt = [t; t; t];
-            v3t = (v3.*tt)';
-            jac = [ dN*(xyz + zeta*v3t/2);
-                N*(v3t)/2 ];
         end
         function dN = shapefunsder(pointArray,eleType)
             ngauss = size(pointArray,1);
