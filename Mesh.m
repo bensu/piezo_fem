@@ -9,12 +9,53 @@ classdef Mesh
         n_ele
         nodes_per_ele
     end
+    methods (Static)
+        function nodal_systems = nodal_systems(eleType,coords,connect)
+            n_coords = size(coords,1);              % Number of coords
+            ksi = [ -1  1  1 -1  0  1  0 -1  0 ];
+            eta = [ -1 -1  1  1 -1  0  1  0  0 ];
+            tol = 1e-9;
+            nodal_systems = zeros(3,3,n_coords);
+            for inod = 1:n_coords
+                % ele:          Find the connect where the node is used
+                % localNode:    Find which node it represents to the element
+                [ele, localNode] = find(connect == inod);
+                nuso = length(ele);     % Number of connect the node belongs to.
+                % Loop through those connect to find v
+                v = zeros(nuso,3);      % Vector directions (v3) of the node in each element
+                for iele = 1:nuso
+                    % Get the jacobian of the element
+                    dN = Element.shapefunsder([ksi(localNode(iele)),eta(localNode(iele))],eleType);
+                    elecoords = connect(ele(iele),:);
+                    nodalCoords = coords(elecoords,:);
+                    jac = dN*nodalCoords;
+                    % Use the jacobian to get v3
+                    v3 = cross(jac(1,:),jac(2,:));
+                    v(iele,:) = v3/norm(v3);
+                end
+                v3 = mean(v,1);
+                % from v3 get v1 and v2
+                v3 = v3'/norm(v3);
+                v1 = cross([0 1 0]',v3);
+                largo = norm(v1);
+                if largo > tol
+                    v1 = v1/largo;
+                else
+                    v1 = [1 0 0]';
+                end
+                % v2 is orthogonal both to v1 and v3
+                v2 = cross(v3,v1);
+                v2 = v2/norm(v2);
+                % save v1 v2 and v3 in the global coords' directions
+                nodal_systems(:,:,inod) = [v1 v2 v3];
+            end
+        end
+    end
     methods
-        function obj = Mesh(coords,connect,node_normals)
+        function obj = Mesh(eleType,coords,connect)
             % obj = Mesh(coords,connect,node_normals)
             % Sanity Checks
-            require(isnumeric(coords) && isnumeric(connect) &&  ... 
-                isnumeric(node_normals), ...
+            require(isnumeric(coords) && isnumeric(connect), ...
                 'ArgumentError: all arguments should be numeric')
             require(all(all(~mod(connect,1))), ...
                 'ArgumentError: connect should be all integers')
@@ -23,7 +64,7 @@ classdef Mesh
             % Setting variables
             obj.coords = coords;
             obj.connect = connect;
-            obj.normals = node_normals;
+            obj.normals = Mesh.nodal_systems(eleType,coords,connect);
         end
         function K = assembly(mesh,dofs_per_node,dofs_per_ele,fun_in)
             % K = assembly(mesh,dofs_per_node,dofs_per_ele,fun_in)
