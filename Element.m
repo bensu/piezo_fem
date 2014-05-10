@@ -71,6 +71,57 @@ classdef Element
         end
     end
     methods (Static)
+        function T = T(jac)
+            % sistema de coordenadas local 123 en [ksi eta zeta]
+            dir1 = jac(1,:);
+            dir3 = cross(dir1,jac(2,:));
+            dir2 = cross(dir3,dir1);
+
+            % Transformation of Strain, Cook pg 212: 
+            % Cook [7.3-5]
+            M1 = [ dir1/norm(dir1); dir2/norm(dir2); dir3/norm(dir3) ];
+            M2 = M1(:,[2 3 1]);
+            M3 = M1([2 3 1],:);
+            M4 = M2([2 3 1],:);
+            T = [ M1.^2     M1.*M2;
+                  2*M1.*M3  M1.*M4 + M3.*M2 ];
+            % Since sigma_zz is ignored, we eliminate the appropriate row.
+            T(3,:) = [];
+        end
+        function B = B(eleType,dofs_per_node,nodalCoords,tEle,v,ksi,eta,zeta)
+            % Prepare values
+            v3 = squeeze(v(:,3,:));         % v3 of iele's coords
+            nodes_per_ele = size(nodalCoords,1);
+            N  = Element.shapefuns([ksi,eta],eleType);
+            jac = Element.shelljac(eleType,nodalCoords,tEle,v3,ksi,eta,zeta);
+            invJac = jac \ eye(3);
+            dN = invJac(:,1:2)*Element.shapefunsder([ksi,eta],eleType);
+
+            B  = zeros(6,nodes_per_ele*dofs_per_node);
+            % B matrix has the same structure for each node and comes from
+            % putting all the B_coords next to each other.
+            % Loop through the mesh.connect coords and get each B_node, then add it
+            % to its columns in the B matrix
+            for inod = 1:nodes_per_ele
+                v1 = v(:,1,inod);
+                v2 = v(:,2,inod);
+                dZN = dN(:,inod)*zeta + N(inod)*invJac(:,3);
+                aux1 = [ dN(1,inod)         0          0
+                                 0  dN(2,inod)         0
+                                 0          0  dN(3,inod)
+                         dN(2,inod) dN(1,inod)         0
+                                 0  dN(3,inod) dN(2,inod)
+                         dN(3,inod)         0  dN(1,inod) ];
+
+                aux2 = [ -v2.*dZN                        v1.*dZN
+                         -v2(1)*dZN(2) - v2(2)*dZN(1)    v1(1)*dZN(2) + v1(2)*dZN(1)
+                         -v2(2)*dZN(3) - v2(3)*dZN(2)    v1(2)*dZN(3) + v1(3)*dZN(2)
+                         -v2(1)*dZN(3) - v2(3)*dZN(1)    v1(1)*dZN(3) + v1(3)*dZN(1) ]*0.5*tEle(inod);
+                ini = 1 + (inod - 1)*dofs_per_node;
+                fin = ini + dofs_per_node - 1;
+                B(:,ini:fin) = [aux1 aux2];
+            end
+        end
         function jac = shelljac(eleType,xyz,t,v3,ksi,eta,zeta)
             % Computes the jacobian for Shell Elements
             % Cook [6.7-2] gives Isoparametric Jacobian
