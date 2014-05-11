@@ -16,6 +16,24 @@ classdef Physics
         end
     end
     methods (Static)
+        function K = K_PiezoShell(element,material,order)
+        % K [ele_dof x ele_dof][Float] Stiffness as calculated in 
+        % Cook 361 12.4-14
+        % element [Element]: Requires methods jacobian and B
+        % material[Material]: Requires methods E, nu, and D
+        % order [Int]: Gauss integration order
+            C = Physics.ElasticShell(material);
+            D = Material.D; 
+            E = Material.e*eyes(3);
+            function K_in_point = K_in_point(ksi,eta,zeta)
+                jac = element.jacobian(ksi,eta,zeta);
+                B = Element.T(jac)* ...
+                    Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
+                K_in_point = B'*C*B*det(jac);
+            end
+            fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
+            K = Integral.Volume3D(fun_in,order,[-1 1]);
+        end
         function L = apply_volume_load(element,order,q)
         % L = apply_load(element,order,q)
         % Generates a load dof vector by integrating a constant load along
