@@ -35,8 +35,8 @@ classdef FemCase < handle
             S = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
                                          fem.physics.dofs_per_ele,  ...
                                          fem.physics.k);
-%             size(S(F,F))
-%             rank(S(F,F))
+            size(S(F,F))
+            rank(S(F,F))
             D = zeros(size(S,1),1);
             D(F) = S(F,F) \ L(F);
             fem.dis.dof_list_in(D);

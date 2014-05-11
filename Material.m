@@ -25,8 +25,6 @@ classdef Material
                 'ArgumentError: D should be size [3x6]')
             require(isnumeric(permitivity), ...
                 'ArgumentError: permitivity should be numeric')
-            require(isscalar(permitivity), ...
-                'ArgumentError: e should be scalar')
             obj = Material(E,nu,rho);
             obj.D = D;
             obj.e = permitivity;

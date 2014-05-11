@@ -24,7 +24,7 @@ classdef Physics
         % order [Int]: Gauss integration order
             elastic = Physics.ElasticShell(material);
             piezo = material.D(:,[1 2 4 5 6]); 
-            electric = material.e*eye(3);
+            electric = diag(material.e);
             % Constitutive Relationship
             C = [   elastic piezo';
                     piezo   electric];   
@@ -44,6 +44,8 @@ classdef Physics
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,order,[-1 1]);
+            rank(K)
+            size(K)
         end
         function L = apply_volume_load(element,order,q)
         % L = apply_load(element,order,q)
