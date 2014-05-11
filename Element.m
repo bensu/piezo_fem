@@ -7,8 +7,6 @@ classdef Element
     end
     properties (Dependent)
         n_nodes
-        thickness_at_node
-        mu_matrix
         v3
     end
     methods
@@ -27,7 +25,7 @@ classdef Element
             % Prepare values
             v = element.normals;
             N  = element.shapefuns(ksi,eta);
-            jac = element.shelljac(ksi,eta,zeta);
+            jac = element.jacobian(ksi,eta,zeta);
             invJac = jac \ eye(3);
             dN = invJac(:,1:2)*element.shapefunsder(ksi,eta);
 
@@ -54,7 +52,10 @@ classdef Element
                 B(:,index_range(dofs_per_node,n)) = [aux1 aux2];
             end
         end
-        function jac = shelljac(element,ksi,eta,zeta)
+        function jac = jacobian(element,ksi,eta,zeta)
+            % jac_out = jacobian(element,ksi,eta,zeta)
+            % jac_out [3x3][Float]: Jacobian Matrix
+            % ksi, eta, zeta [Float] between [-1,1], checking done in N
             % Computes the jacobian for Shell Elements
             % Cook [6.7-2] gives Isoparametric Jacobian
             % Cook [12.5-4] & [12.5-2] gives Shells Derivatives.
@@ -67,53 +68,6 @@ classdef Element
             jac = [ dN*(element.coords + zeta*v3t/2);
                 N*(v3t)/2 ];
         end
-        function jac_out = jacobian(element,xi,eta,mu)
-            % jac_out = jacobian(element,xi,eta,mu)
-            % jac_out [3x3][Float]: Jacobian Matrix
-            % xi, eta, mu [Float] between [-1,1]
-            % Computes the Jacobian for the ShellQ4 element
-            % as defined in Cook pg 360 12.5-4
-            dNdxi = Element.dNdxi_Q4(xi,eta);
-            dNdeta = Element.dNeta_Q4(xi,eta);
-            N = Element.N_Q4(xi,eta);
-            % This ASSUMES element.normals has a certain shape
-            jac_out = [dNdxi;dNdeta;zeros(1,4)]*element.coords ...
-                + [mu*dNdxi;mu*dNdeta;N]*element.normals/2;
-        end
-        function thickness_out = get.thickness_at_node(element)
-            % thickness_out = get.thickness_at_node(element)
-            % thickness_out [4x1][Float] original thickness of the shell at
-            % each node. Cook pg 358 12.5-1 as t_i
-            % Computed from the normals vector
-            V3 = element.normals';
-            node_num = 4;
-            thickness_out = zeros(node_num,1);
-            for node = 1:node_num
-                thickness_out(node) = norm(V3(:,node));
-            end
-        end
-        function mu_out = get.mu_matrix(element)
-            % mu_out = get.mu_matrix(element)
-            % mu_out [3x2x4] Cook pg 359 12.5-3
-            % Computes the matrix for each element and stores it in a 3D
-            % array
-            node_num = 4;
-            V1 = zeros(3,node_num);
-            node = 1;
-            for i = [-1,1]
-                for j = [-1,1]
-                    V1(:,node) = Element.dNeta_Q4(i,j)*element.coords;
-                    node = node + 1;
-                end
-            end
-            V3 = element.normals';
-            mu_out = zeros(3,2,node_num);
-            for node = 1:node_num
-                mu_out(:,2,node) = V1(:,node)/norm(V1(:,node));
-                V2 = cross(V3(:,node),mu_out(:,2,node));
-                mu_out(:,1,node) = -V2/norm(V2);
-            end
-        end
         function out = get.n_nodes(element)
             % out = get.n_nodes(element)
             % Number of nodes in the element
@@ -123,6 +77,12 @@ classdef Element
             out = squeeze(element.normals(:,3,:));
         end
         function dN = shapefunsder(element,ksi,eta)
+            require(isnumeric([ksi eta]), ...
+                'ArgumentError: Both ksi and eta should be numeric')
+            require(-1<=ksi && ksi<=1, ...
+                'ArgumetnError: ksi should be -1<=ksi<=1')
+            require(-1<=eta && eta<=1, ...
+                'ArgumetnError: eta should be -1<=eta<=1')
             switch element.type
                 case {'Q9', 'AHMAD9'}
                    dN = [   % dN ksi
@@ -178,7 +138,13 @@ classdef Element
                     
             end
         end
-        function N = shapefuns(element,ksi,eta) 
+        function N = shapefuns(element,ksi,eta)
+            require(isnumeric([ksi eta]), ...
+                'ArgumentError: Both ksi and eta should be numeric')
+            require(-1<=ksi && ksi<=1, ...
+                'ArgumetnError: ksi should be -1<=ksi<=1')
+            require(-1<=eta && eta<=1, ...
+                'ArgumetnError: eta should be -1<=eta<=1')
             switch element.type
                 case {'Q4', 'AHMAD4'}
                     N4 = 0.25*(1 - ksi)*(1 + eta);
@@ -272,9 +238,9 @@ classdef Element
         function dNdxiQ4_out = dNdxi_Q4(xi,eta)
             % derivatives
             require(isnumeric([xi eta]), ...
-                'ArgumentError: Both xi and eta should be numeric')
+                'ArgumentError: Both ksi and eta should be numeric')
             require(-1<=xi && xi<=1, ...
-                'ArgumetnError: xi should be -1<=xi<=1')
+                'ArgumetnError: ksi should be -1<=ksii<=1')
             require(-1<=eta && eta<=1, ...
                 'ArgumetnError: eta should be -1<=eta<=1')
             dNdxiQ4_out = zeros(1,4);

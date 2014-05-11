@@ -21,7 +21,7 @@ classdef Physics
             function L_out = apply_load_in_point(ksi,eta,zeta)
                 NN = Element.shape_to_diag(3, ... 
                         element.shapefuns(ksi,eta)); 
-                jac = element.shelljac(ksi,eta,zeta);
+                jac = element.jacobian(ksi,eta,zeta);
                 L_out = NN'*det(jac)*q;
             end
             fun_in = @(xi,eta,mu) (apply_load_in_point(xi,eta,mu));
@@ -30,7 +30,7 @@ classdef Physics
         function K = K_Shell2(element,material,order)
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(ksi,eta,zeta)
-                jac = element.shelljac(ksi,eta,zeta);
+                jac = element.jacobian(ksi,eta,zeta);
                 B = Element.T(jac)*element.B(5,ksi,eta,zeta); % Cook [7.3-10]
                 K_in_point = B'*C*B*det(jac);
             end
