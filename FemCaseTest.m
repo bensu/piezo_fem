@@ -18,15 +18,15 @@ classdef FemCaseTest < matlab.unittest.TestCase
             expected_phi = -(q*area)*(a^2)/(2*E*I)
             
             % Elements along the side
-            m = 100;
-            n = 40;
+            m = 20;
+            n = 8;
             % With 
             F = (q*area)/(n*2);   % Force at each node.
 
             % Create the FemCase
-            mesh = Factory.ShellMesh([m,n],[a,b,t]);
+            mesh = Factory.ShellMesh('AHMAD4',[m,n],[a,b,t]);
             material = Material(E,nu,rho);
-            K = @(element) Physics.K_Shell(element,material,2);
+            K = @(element) Physics.K_Shell(element,material,3);
             physics = Physics(5,0,K);
             fem = FemCase(mesh,physics);
             
@@ -77,7 +77,7 @@ classdef FemCaseTest < matlab.unittest.TestCase
             % With 
             F = q*area/(m*2);   % Force at each node.
 
-            mesh = Factory.ShellMesh([m,m],[a,b,t]);
+            mesh = Factory.ShellMesh('Q4',[m,m],[a,b,t]);
             % Break the symmetry
             tol = 1e-5;
             inner = @(x,y,z) (~(abs(x-a) < tol) && ~(abs(x) < tol) && ...
