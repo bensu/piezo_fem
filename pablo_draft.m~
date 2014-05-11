@@ -42,31 +42,17 @@ dofs_per_node = 5;                      % Dofs per Node
 dofs_per_ele = 0;
 n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
 
-
-%% BC
-
-bc = false(mesh.n_nodes,dofs_per_node);
-tol = 1e-3;
-bc(coords_in(:,1) < tol,[2 3]) = true;       % borde apoyado
-bc(coords_in(:,2) < tol,[2 4]) = true;       % simetría longitudinal
-bc(coords_in(:,1) > 25 - tol,[1 5]) = true;  % simetría transversal
-
-% nodalForces = zeros(mesh.n_nodes,dofs_per_node);
-
-% Draw_Placas(mesh.connect,coords,'k')
-
 %% PHYSICAL PROPERTIES
-
 
 E = 4.32E8;
 nu = 0.0;
 material = Material(E,nu,1);
 
-%% Assembly
+%% FEM
 
 fun_in = @(element) Physics.K_Shell2(element,material,3);
-K = mesh.assembly_matrix(dofs_per_node,dofs_per_ele,fun_in);
-
+physics = Physics(dofs_per_node,dofs_per_ele,fun_in);
+fem = FemCase(mesh,physics);
 
 %% Vector de cargas
 
@@ -77,28 +63,46 @@ rstInt = 3*ones(1,3);
 R = zeros(n_dofs,1);
 q = [0 0 -360]';
 
-% mesh.assembly1D(dofs_per_node,dofs_per_ele,fun_in);
+% R = mesh.assembly_vector(dofs_per_node,dofs_per_ele,fun_in);
 % Assembly
-for iele = 1:mesh.n_ele
-%     re = zeros((dofs_per_node - 2)*nodes_per_ele,1);
-    element = mesh.ele(iele);
-    elecoords = mesh.connect(iele,:);
+for e = 1:mesh.n_ele
+    element = mesh.ele(e);
+    elecoords = mesh.connect(e,:);
     re = Physics.apply_load(element,3,q);
-    eleDofs = node2dof(elecoords,dofs_per_node);
-    R(eleDofs(vdof)) = R(eleDofs(vdof)) + re;
+    ele_dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,e);
+    R(ele_dofs(vdof)) = R(ele_dofs(vdof)) + re;
 end
-%%
 
-% nodalForces = nodalForces';
-% R = nodalForces(:);
+fem.loads.node_vals.dof_list_in(R);
 
-fixed = reshape(bc',[],1);
-free = ~fixed;
+%% BC
 
-Ur = K(free,free)\R(free);
+bc = false(mesh.n_nodes,dofs_per_node);
+tol = 1e-3;
+bc(coords_in(:,1) < tol,[2 3]) = true;       % borde apoyado
+bc(coords_in(:,2) < tol,[2 4]) = true;       % simetría longitudinal
+bc(coords_in(:,1) > 25 - tol,[1 5]) = true;  % simetría transversal
+
+fem.bc.node_vals.vals = bc;
+
+%% Solution
+
+%% Assembly
+
+fun_in = @(element) Physics.K_Shell2(element,material,3);
+K = mesh.assembly_matrix(dofs_per_node,dofs_per_ele,fun_in);
+
+fem.solve();
+
+fem.
+
+F = ~fem.bc.all_dofs;
+L = fem.loads.all_dofs;
+
+Ur = K(F,F)\L(F);
 
 U = zeros(n_dofs,1);
-U(free) = Ur;
+U(F) = Ur;
 
 U = (reshape(U,[],mesh.n_nodes))';
 

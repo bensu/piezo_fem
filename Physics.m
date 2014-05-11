@@ -30,10 +30,7 @@ classdef Physics
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(ksi,eta,zeta)
                 jac = element.shelljac(ksi,eta,zeta);
-                B = element.B(5,ksi,eta,zeta);
-                T = Element.T(jac);
-                B = T*B;    % Cook [7.3-10]
-%                 K_in_point = B'*C*B*dJac*wgauss(ig);
+                B = Element.T(jac)*element.B(5,ksi,eta,zeta); % Cook [7.3-10]
                 K_in_point = B'*C*B*det(jac);
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
