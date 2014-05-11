@@ -19,7 +19,8 @@ classdef Physics
         function L = apply_load(element,order,q)
             
             function L_out = apply_load_in_point(ksi,eta,zeta)
-                [~,NN]  = Element.shapefuns(ksi,eta,element.type);
+                NN = Element.shape_to_diag(3, ... 
+                        element.shapefuns(ksi,eta)); 
                 jac = element.shelljac(ksi,eta,zeta);
                 L_out = NN'*det(jac)*q;
             end

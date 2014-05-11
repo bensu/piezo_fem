@@ -13,6 +13,7 @@ classdef Element
     end
     methods
         function obj = Element(type,coords,normals,t_in)
+        % function obj = Element(type,coords,normals,t_in)
 %             require(size(coords,1)==4, ...
 %                 'ArgumentError: only 4 nodes');
 %             require(size(coords)==size(normals), ...
@@ -25,42 +26,40 @@ classdef Element
         function B = B(element,dofs_per_node,ksi,eta,zeta)
             % Prepare values
             v = element.normals;
-            N  = Element.shapefuns(ksi,eta,element.type);
+            N  = element.shapefuns(ksi,eta);
             jac = element.shelljac(ksi,eta,zeta);
             invJac = jac \ eye(3);
-            dN = invJac(:,1:2)*Element.shapefunsder(ksi,eta,element.type);
+            dN = invJac(:,1:2)*element.shapefunsder(ksi,eta);
 
             B  = zeros(6,element.n_nodes*dofs_per_node);
             % B matrix has the same structure for each node and comes from
             % putting all the B_coords next to each other.
             % Loop through the mesh.connect coords and get each B_node, then add it
             % to its columns in the B matrix
-            for inod = 1:element.n_nodes
-                v1 = v(:,1,inod);
-                v2 = v(:,2,inod);
-                dZN = dN(:,inod)*zeta + N(inod)*invJac(:,3);
-                aux1 = [ dN(1,inod)         0          0
-                                 0  dN(2,inod)         0
-                                 0          0  dN(3,inod)
-                         dN(2,inod) dN(1,inod)         0
-                                 0  dN(3,inod) dN(2,inod)
-                         dN(3,inod)         0  dN(1,inod) ];
+            for n = 1:element.n_nodes
+                v1 = v(:,1,n);
+                v2 = v(:,2,n);
+                dZN = dN(:,n)*zeta + N(n)*invJac(:,3);
+                aux1 = [ dN(1,n)         0          0
+                                 0  dN(2,n)         0
+                                 0          0  dN(3,n)
+                         dN(2,n) dN(1,n)         0
+                                 0  dN(3,n) dN(2,n)
+                         dN(3,n)         0  dN(1,n) ];
 
                 aux2 = [ -v2.*dZN                        v1.*dZN
                          -v2(1)*dZN(2) - v2(2)*dZN(1)    v1(1)*dZN(2) + v1(2)*dZN(1)
                          -v2(2)*dZN(3) - v2(3)*dZN(2)    v1(2)*dZN(3) + v1(3)*dZN(2)
-                         -v2(1)*dZN(3) - v2(3)*dZN(1)    v1(1)*dZN(3) + v1(3)*dZN(1) ]*0.5*element.thickness(inod);
-                ini = 1 + (inod - 1)*dofs_per_node;
-                fin = ini + dofs_per_node - 1;
-                B(:,ini:fin) = [aux1 aux2];
+                         -v2(1)*dZN(3) - v2(3)*dZN(1)    v1(1)*dZN(3) + v1(3)*dZN(1) ]*0.5*element.thickness(n);
+                B(:,index_range(dofs_per_node,n)) = [aux1 aux2];
             end
         end
         function jac = shelljac(element,ksi,eta,zeta)
             % Computes the jacobian for Shell Elements
             % Cook [6.7-2] gives Isoparametric Jacobian
             % Cook [12.5-4] & [12.5-2] gives Shells Derivatives.
-            N  = Element.shapefuns(ksi,eta,element.type);
-            dN = Element.shapefunsder(ksi,eta,element.type);
+            N  = element.shapefuns(ksi,eta);
+            dN = element.shapefunsder(ksi,eta);
             v3 = element.v3;
             t = element.thickness;
             tt = [t; t; t];
@@ -123,6 +122,95 @@ classdef Element
         function out = get.v3(element)
             out = squeeze(element.normals(:,3,:));
         end
+        function dN = shapefunsder(element,ksi,eta)
+            switch element.type
+                case {'Q9', 'AHMAD9'}
+                   dN = [   % dN ksi
+                            0.25*eta*(-1+eta)*(2*ksi-1),    ...	
+                            0.25*eta*(-1+eta)*(2*ksi+1),    ...	
+                            0.25*eta*(1+eta)*(2*ksi+1),     ...
+                            0.25*eta*( 1+eta)*(2*ksi-1),    ...
+                            -ksi*eta*(-1+eta),              ...
+                            -1/2*(-1+eta)*(1+eta)*(2*ksi+1),...
+                            -ksi*eta*(1+eta),               ...
+                            -1/2*(-1+eta)*(1+eta)*(2*ksi-1),...
+                            2*ksi*(-1+eta)*(1+eta);
+                            % dN eta
+                            0.25*ksi*(-1+2*eta)*(ksi-1),    ...
+                            0.25*ksi*(-1+2*eta)*(1+ksi),    ...
+                            0.25*ksi*(2*eta+1)*(1+ksi),     ...
+                            0.25*ksi*(2*eta+1)*(ksi-1),     ...  
+                            -0.5*(ksi-1)*(1+ksi)*(-1+2*eta),...
+                            -ksi*eta*(1+ksi),               ...
+                            -0.5*(ksi-1)*(1+ksi)*(2*eta+1), ...
+                            -ksi*eta*(ksi-1),               ...
+                            2*(ksi-1)*(1+ksi)*eta ];
+                case {'Q8', 'AHMAD8'}
+                    dN = [  % dN ksi
+                            -0.25*(-1+eta)*(eta+2*ksi),     ...
+                            -0.25*(-1+eta)*(-eta+2*ksi),    ...
+                            0.25*(1+eta)*(eta+2*ksi),       ...
+                            0.25*(1+eta)*(-eta+2*ksi),      ...
+                            ksi*(-1+eta),                   ...
+                            -0.5*(-1+eta)*(1+eta),          ...
+                            -ksi*(1+eta),                   ...
+                            0.5*(-1+eta)*(1+eta);
+                            % dN deta
+                            -0.25*(-1+ksi)*(ksi+2*eta),     ...
+                            -0.25*(1+ksi)*(ksi-2*eta),      ...
+                            0.25*(1+ksi)*(ksi+2*eta),       ...
+                            0.25*(-1+ksi)*(ksi-2*eta),      ...
+                            0.5*(-1+ksi)*(1+ksi),           ...
+                            -(1+ksi)*eta,                   ...
+                            -0.5*(-1+ksi)*(1+ksi),          ...
+                            (-1+ksi)*eta ];
+                case {'Q4', 'AHMAD4'}
+                    dN = [  % dN ksi
+                            -0.25*(1 - eta),    ...
+                            0.25*(1 - eta),     ...
+                            0.25*(1 + eta),     ...
+                            -0.25*(1 + eta)
+                            % dN deta
+                            -0.25*(1 - ksi),    ...
+                            -0.25*(1 + ksi),    ...
+                            0.25*(1 + ksi),     ...
+                            0.25*(1 - ksi) ];
+                    
+            end
+        end
+        function N = shapefuns(element,ksi,eta) 
+            switch element.type
+                case {'Q4', 'AHMAD4'}
+                    N4 = 0.25*(1 - ksi)*(1 + eta);
+                    N3 = 0.25*(1 + ksi)*(1 + eta);
+                    N2 = 0.25*(1 + ksi)*(1 - eta);
+                    N1 = 0.25*(1 - ksi)*(1 - eta);
+                    N = [N1 N2 N3 N4];
+                                       
+                case {'Q8','AHMAD8'}
+                    N8 = 0.50*(1 - ksi  )*(1 - eta^2);
+                    N7 = 0.50*(1 - ksi^2)*(1 + eta  );
+                    N6 = 0.50*(1 + ksi  )*(1 - eta^2);
+                    N5 = 0.50*(1 - ksi^2)*(1 - eta  );
+                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8);
+                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7);
+                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6);
+                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8);
+                    N = [N1 N2 N3 N4 N5 N6 N7 N8];
+                    
+                case {'Q9','AHMAD9'}
+                    N9 =      (1 - ksi^2)*(1 - eta^2);
+                    N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
+                    N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
+                    N6 = 0.50*(1 + ksi  )*(1 - eta^2) - 0.5*N9;
+                    N5 = 0.50*(1 - ksi^2)*(1 - eta  ) - 0.5*N9;
+                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8 + 0.5*N9);
+                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7 + 0.5*N9);
+                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6 + 0.5*N9);
+                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
+                    N  = [N1 N2 N3 N4 N5 N6 N7 N8 N9];                    
+            end
+        end
     end
     methods (Static)
         function T = T(jac)
@@ -142,124 +230,18 @@ classdef Element
             % Since sigma_zz is ignored, we eliminate the appropriate row.
             T(3,:) = [];
         end
-        function dN = shapefunsder(ksi,eta,eleType)
-            switch eleType
-                case {'Q9', 'AHMAD9'}
-                        dN = [ % derivadas respecto de ksi
-                            0.25*eta*(-1+eta)*(2*ksi-1),      0.25*eta*(-1+eta)*(2*ksi+1),       0.25*eta*(1+eta)*(2*ksi+1),...
-                            0.25*eta*( 1+eta)*(2*ksi-1),                -ksi*eta*(-1+eta),  -1/2*(-1+eta)*(1+eta)*(2*ksi+1),...
-                            -ksi*eta*(1+eta),  -1/2*(-1+eta)*(1+eta)*(2*ksi-1),           2*ksi*(-1+eta)*(1+eta)
-                            % derivadas respecto de eta
-                            0.25*ksi*(-1+2*eta)*(ksi-1),      0.25*ksi*(-1+2*eta)*(1+ksi),       0.25*ksi*(2*eta+1)*(1+ksi),...
-                            0.25*ksi*(2*eta+1)*(ksi-1),  -0.5*(ksi-1)*(1+ksi)*(-1+2*eta),                 -ksi*eta*(1+ksi),...
-                            -0.5*(ksi-1)*(1+ksi)*(2*eta+1),                 -ksi*eta*(ksi-1),           2*(ksi-1)*(1+ksi)*eta ];  
-                case {'Q8', 'AHMAD8'}
-                        dN = [  % derivadas respecto de ksi
-                            -0.25*(-1+eta)*(eta+2*ksi),  -0.25*(-1+eta)*(-eta+2*ksi),    0.25*(1+eta)*(eta+2*ksi),   0.25*(1+eta)*(-eta+2*ksi),...
-                            ksi*(-1+eta),        -0.5*(-1+eta)*(1+eta),                -ksi*(1+eta),        0.5*(-1+eta)*(1+eta)
-                            % derivadas respecto de eta
-                            -0.25*(-1+ksi)*(ksi+2*eta),   -0.25*(1+ksi)*(ksi-2*eta),    0.25*(1+ksi)*(ksi+2*eta),   0.25*(-1+ksi)*(ksi-2*eta),...
-                            0.5*(-1+ksi)*(1+ksi),                -(1+ksi)*eta,       -0.5*(-1+ksi)*(1+ksi),               (-1+ksi)*eta ];
-                case {'Q4', 'AHMAD4'}
-                        dN(:,:,igauss) = [  % derivadas respecto de ksi
-                            -0.25*(1 - eta),  0.25*(1 - eta), 0.25*(1 + eta), -0.25*(1 + eta)
-                            % derivadas respecto de eta
-                            -0.25*(1 - ksi), -0.25*(1 + ksi), 0.25*(1 + ksi),  0.25*(1 - ksi) ];
-                    
-            end
-        end
-        
-        function [Ni,N] = shapefuns(ksi,eta,eleType) 
-            switch eleType
-                case 'Q9'
-                    N  = zeros(2,18);
-                    N9 =      (1 - ksi^2)*(1 - eta^2);
-                    N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
-                    N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
-                    N6 = 0.50*(1 + ksi  )*(1 - eta^2) - 0.5*N9;
-                    N5 = 0.50*(1 - ksi^2)*(1 - eta  ) - 0.5*N9;
-                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8 + 0.5*N9);
-                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7 + 0.5*N9);
-                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6 + 0.5*N9);
-                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
-                    
-                    Ni  = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-                    N (1,1:2:17) = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-                    N (2,2:2:18) = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-                    
-                case 'AHMAD9'
-                    N  = zeros(3,3*9);
-                    Id = eye(3);
-                    
-                    N9 =      (1 - ksi^2)*(1 - eta^2);
-                    N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
-                    N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
-                    N6 = 0.50*(1 + ksi  )*(1 - eta^2) - 0.5*N9;
-                    N5 = 0.50*(1 - ksi^2)*(1 - eta  ) - 0.5*N9;
-                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8 + 0.5*N9);
-                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7 + 0.5*N9);
-                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6 + 0.5*N9);
-                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
-                    
-                    Ni  = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-                    N (:,:) = [  N1*Id, N2*Id, N3*Id, ...
-                        N4*Id, N5*Id, N6*Id, ...
-                        N7*Id, N8*Id, N9*Id ];
-                    
-                case 'Q8'
-                    N  = zeros(2,16);
-                    N8 = 0.50*(1 - ksi  )*(1 - eta^2);
-                    N7 = 0.50*(1 - ksi^2)*(1 + eta  );
-                    N6 = 0.50*(1 + ksi  )*(1 - eta^2);
-                    N5 = 0.50*(1 - ksi^2)*(1 - eta  );
-                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8);
-                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7);
-                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6);
-                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8);
-                    
-                    Ni = [N1 N2 N3 N4 N5 N6 N7 N8];
-                    N (1,1:2:15) = [N1 N2 N3 N4 N5 N6 N7 N8];
-                    N (2,2:2:16) = [N1 N2 N3 N4 N5 N6 N7 N8];
-                    
-                case 'AHMAD8'
-                    N  = zeros(3,3*8,ngauss);
-                    Id = eye(3);
-                    N8 = 0.50*(1 - ksi  )*(1 - eta^2);
-                    N7 = 0.50*(1 - ksi^2)*(1 + eta  );
-                    N6 = 0.50*(1 + ksi  )*(1 - eta^2);
-                    N5 = 0.50*(1 - ksi^2)*(1 - eta  );
-                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8);
-                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7);
-                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6);
-                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8);
-                    
-                    Ni = [N1 N2 N3 N4 N5 N6 N7 N8];
-                    N (:,:) = [ N1*Id, N2*Id, N3*Id, ...
-                        N4*Id, N5*Id, N6*Id, ...
-                        N7*Id, N8*Id ];
-                    
-                case 'Q4'
-                    N  = zeros(2,8);
-                    N4 = 0.25*(1 - ksi)*(1 + eta);
-                    N3 = 0.25*(1 + ksi)*(1 + eta);
-                    N2 = 0.25*(1 + ksi)*(1 - eta);
-                    N1 = 0.25*(1 - ksi)*(1 - eta);
-                    
-                    Ni = [N1 N2 N3 N4];
-                    N (1,1:2:7) = [N1 N2 N3 N4];
-                    N (2,2:2:8) = [N1 N2 N3 N4];
-                    
-                case 'AHMAD4'
-                    N  = zeros(3,3*4);
-                    Id = eye(3);
-                    N4 = 0.25*(1 - ksi)*(1 + eta);
-                    N3 = 0.25*(1 + ksi)*(1 + eta);
-                    N2 = 0.25*(1 + ksi)*(1 - eta);
-                    N1 = 0.25*(1 - ksi)*(1 - eta);
-                    
-                    Ni = [N1 N2 N3 N4];
-                    N (:,:,igauss) = [ N1*Id, N2*Id, N3*Id, N4*Id ];
-                    
+        function NN = shape_to_diag(dim,N)
+            % NN = shape_to_diag(dim,N)
+            % NN [Float][dim x n_nodes]: Repeated values of N
+            % N [Float] [1 x n_nodes]: Evaluated shape functions
+            % dim [Int]: dimension of the problem, 2 or 3.
+            % Rearranges for some surface integral for loads
+            n_nodes = length(N);
+            NN = zeros(dim,n_nodes);
+            I = eye(dim);
+            for n = 1:n_nodes
+                i = index_range(dim,n);
+                NN(:,i) = N(n)*I;
             end
         end
         function N_out = N_ShellQ4(element,xi,eta,mu)
