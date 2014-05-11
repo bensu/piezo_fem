@@ -78,15 +78,18 @@ classdef Element
         end
     end
     methods (Static)
-        function T = T(jac)
+        function cosines = direction_cosines(jac)
             % sistema de coordenadas local 123 en [ksi eta zeta]
             dir1 = jac(1,:);
             dir3 = cross(dir1,jac(2,:));
             dir2 = cross(dir3,dir1);
-
+            cosines = [ dir1/norm(dir1); dir2/norm(dir2); dir3/norm(dir3)];
+        end
+        function T = T(jac)
+            % jac [3x3][Float]: Jacobian matrix
             % Transformation of Strain, Cook pg 212: 
             % Cook [7.3-5]
-            M1 = [ dir1/norm(dir1); dir2/norm(dir2); dir3/norm(dir3) ];
+            M1 = Element.direction_cosines(jac);
             M2 = M1(:,[2 3 1]);
             M3 = M1([2 3 1],:);
             M4 = M2([2 3 1],:);

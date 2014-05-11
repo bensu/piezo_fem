@@ -22,13 +22,24 @@ classdef Physics
         % element [Element]: Requires methods jacobian and B
         % material[Material]: Requires methods E, nu, and D
         % order [Int]: Gauss integration order
-            C = Physics.ElasticShell(material);
-            D = Material.D; 
-            E = Material.e*eyes(3);
+            elastic = Physics.ElasticShell(material);
+            piezo = material.D(:,[1 2 4 5 6]); 
+            electric = material.e*eye(3);
+            % Constitutive Relationship
+            C = [   elastic piezo';
+                    piezo   electric];   
             function K_in_point = K_in_point(ksi,eta,zeta)
+                % Piezo Part - could be done outside K_in_point
                 jac = element.jacobian(ksi,eta,zeta);
-                B = Element.T(jac)* ...
-                    Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
+                cosines = Element.direction_cosines(jac);
+                inv_jac = jac \ eye(3);
+                dN_ele = zeros(3,2);
+                dN_ele(3,:) = [-1 1];
+                dN_xyz = inv_jac*dN_ele;
+                % Mechanics Part
+                B_mech = Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
+                % Join both and trasform the coordinates
+                B = blkdiag(Element.T(jac),cosines)*blkdiag(B_mech,dN_xyz);
                 K_in_point = B'*C*B*det(jac);
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
