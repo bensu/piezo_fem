@@ -4,7 +4,7 @@ close all
 
 %% IMPORT MESH
 
-ele_type = 'AHMAD9';
+ele_type = 'AHMAD4';
 n = 10;
 switch ele_type
     case 'AHMAD9'
@@ -87,26 +87,19 @@ fem.bc.node_vals.vals = bc;
 
 %% Solution
 
-%% Assembly
-
-fun_in = @(element) Physics.K_Shell2(element,material,3);
-K = mesh.assembly_matrix(dofs_per_node,dofs_per_ele,fun_in);
-
 fem.solve();
 
-fem.
-
-F = ~fem.bc.all_dofs;
-L = fem.loads.all_dofs;
-
-Ur = K(F,F)\L(F);
-
-U = zeros(n_dofs,1);
-U(F) = Ur;
-
-U = (reshape(U,[],mesh.n_nodes))';
+U = fem.dis.node_vals.vals;
 
 max(abs(U))
+
+scale = 1;
+PlotMesh(mesh.coords + scale*fem.dis.node_vals.vals(:,1:3), ...
+    mesh.connect, ...
+    ~fem.bc.node_vals.vals, ...
+                fem.reactions.node_vals.vals);
+
+%% Expected Solutions
 
 % Draw_Placas(mesh.connect,coords + U(:,1:3),'b')
 

@@ -93,6 +93,14 @@ U = fem.dis.node_vals.vals;
 
 max(abs(U))
 
+%% PLOT 
+
+scale = 1;
+PlotMesh(mesh.coords + scale*fem.dis.node_vals.vals(:,1:3), ...
+    mesh.connect, ...
+    ~fem.bc.node_vals.vals, ...
+                fem.reactions.node_vals.vals);
+
 %% Expected Solutions
 
 % Draw_Placas(mesh.connect,coords + U(:,1:3),'b')

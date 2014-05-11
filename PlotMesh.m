@@ -19,11 +19,11 @@ function PlotMesh(coordinates,nodes,bc,force)
 %           nodes - The nodal connectivity of the elements
 %           -----> nodes = [node1 node2......]
 %--------------------------------------------------------------------------
-nodes = nodes(:,[1 2 4 3]);
+% nodes = nodes(:,[1 2 4 3]);
 bc = ~bc;
 nel = size(nodes,1) ;                  % number of elements
 nnode = size(coordinates,1) ;          % total number of nodes in system
-nnel = size(nodes,2);                % number of nodes per element
+nnel = 4;                              % Nodes per element (to be plotted)
 
 % Initialization of the required matrices
 X = zeros(nnel,nel);
@@ -58,7 +58,7 @@ axis off ;
 k = nodes(:,1:end);
 nd = k' ;
 for i = 1:nel
-    text(X(:,i),Y(:,i),Z(:,i),int2str(nd(:,i)),'fontsize',8,'color','k');
+    text(X(:,i),Y(:,i),Z(:,i),int2str(nd(1:4,i)),'fontsize',8,'color','k');
     text(sum(X(:,i))/4,sum(Y(:,i))/4,sum(Z(:,i))/4,int2str(i),'fontsize',10,'color','r') ;
 end
 hold off
