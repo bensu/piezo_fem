@@ -25,10 +25,10 @@ classdef Element
         function B = B(element,dofs_per_node,ksi,eta,zeta)
             % Prepare values
             v = element.normals;
-            N  = Element.shapefuns([ksi,eta],element.type);
+            N  = Element.shapefuns(ksi,eta,element.type);
             jac = element.shelljac(ksi,eta,zeta);
             invJac = jac \ eye(3);
-            dN = invJac(:,1:2)*Element.shapefunsder([ksi,eta],element.type);
+            dN = invJac(:,1:2)*Element.shapefunsder(ksi,eta,element.type);
 
             B  = zeros(6,element.n_nodes*dofs_per_node);
             % B matrix has the same structure for each node and comes from
@@ -59,8 +59,8 @@ classdef Element
             % Computes the jacobian for Shell Elements
             % Cook [6.7-2] gives Isoparametric Jacobian
             % Cook [12.5-4] & [12.5-2] gives Shells Derivatives.
-            N  = Element.shapefuns([ksi,eta],element.type);
-            dN = Element.shapefunsder([ksi,eta],element.type);
+            N  = Element.shapefuns(ksi,eta,element.type);
+            dN = Element.shapefunsder(ksi,eta,element.type);
             v3 = element.v3;
             t = element.thickness;
             tt = [t; t; t];
@@ -142,179 +142,123 @@ classdef Element
             % Since sigma_zz is ignored, we eliminate the appropriate row.
             T(3,:) = [];
         end
-        function dN = shapefunsder(pointArray,eleType)
-            ngauss = size(pointArray,1);
+        function dN = shapefunsder(ksi,eta,eleType)
             switch eleType
                 case {'Q9', 'AHMAD9'}
-                    dN = zeros(2,9,ngauss);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
-                        
-                        dN(:,:,igauss) = [ % derivadas respecto de ksi
+                        dN = [ % derivadas respecto de ksi
                             0.25*eta*(-1+eta)*(2*ksi-1),      0.25*eta*(-1+eta)*(2*ksi+1),       0.25*eta*(1+eta)*(2*ksi+1),...
                             0.25*eta*( 1+eta)*(2*ksi-1),                -ksi*eta*(-1+eta),  -1/2*(-1+eta)*(1+eta)*(2*ksi+1),...
                             -ksi*eta*(1+eta),  -1/2*(-1+eta)*(1+eta)*(2*ksi-1),           2*ksi*(-1+eta)*(1+eta)
                             % derivadas respecto de eta
                             0.25*ksi*(-1+2*eta)*(ksi-1),      0.25*ksi*(-1+2*eta)*(1+ksi),       0.25*ksi*(2*eta+1)*(1+ksi),...
                             0.25*ksi*(2*eta+1)*(ksi-1),  -0.5*(ksi-1)*(1+ksi)*(-1+2*eta),                 -ksi*eta*(1+ksi),...
-                            -0.5*(ksi-1)*(1+ksi)*(2*eta+1),                 -ksi*eta*(ksi-1),           2*(ksi-1)*(1+ksi)*eta ];
-                    end
-                    
+                            -0.5*(ksi-1)*(1+ksi)*(2*eta+1),                 -ksi*eta*(ksi-1),           2*(ksi-1)*(1+ksi)*eta ];  
                 case {'Q8', 'AHMAD8'}
-                    dN = zeros(2,8,ngauss);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
-                        dN(:,:,igauss) = [  % derivadas respecto de ksi
+                        dN = [  % derivadas respecto de ksi
                             -0.25*(-1+eta)*(eta+2*ksi),  -0.25*(-1+eta)*(-eta+2*ksi),    0.25*(1+eta)*(eta+2*ksi),   0.25*(1+eta)*(-eta+2*ksi),...
                             ksi*(-1+eta),        -0.5*(-1+eta)*(1+eta),                -ksi*(1+eta),        0.5*(-1+eta)*(1+eta)
                             % derivadas respecto de eta
                             -0.25*(-1+ksi)*(ksi+2*eta),   -0.25*(1+ksi)*(ksi-2*eta),    0.25*(1+ksi)*(ksi+2*eta),   0.25*(-1+ksi)*(ksi-2*eta),...
                             0.5*(-1+ksi)*(1+ksi),                -(1+ksi)*eta,       -0.5*(-1+ksi)*(1+ksi),               (-1+ksi)*eta ];
-                    end
                 case {'Q4', 'AHMAD4'}
-                    dN = zeros(2,4,ngauss);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
                         dN(:,:,igauss) = [  % derivadas respecto de ksi
                             -0.25*(1 - eta),  0.25*(1 - eta), 0.25*(1 + eta), -0.25*(1 + eta)
                             % derivadas respecto de eta
                             -0.25*(1 - ksi), -0.25*(1 + ksi), 0.25*(1 + ksi),  0.25*(1 - ksi) ];
-                    end
                     
             end
         end
         
-        function [Ni,N] = shapefuns(pointArray,eleType)
-            ngauss = size(pointArray,1);
-            
+        function [Ni,N] = shapefuns(ksi,eta,eleType) 
             switch eleType
-                
                 case 'Q9'
-                    N  = zeros(2,18,ngauss);
-                    Ni = zeros(1, 9,ngauss);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
-                        
-                        N9 =      (1 - ksi^2)*(1 - eta^2);
-                        N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
-                        N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
-                        N6 = 0.50*(1 + ksi  )*(1 - eta^2) - 0.5*N9;
-                        N5 = 0.50*(1 - ksi^2)*(1 - eta  ) - 0.5*N9;
-                        N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8 + 0.5*N9);
-                        N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7 + 0.5*N9);
-                        N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6 + 0.5*N9);
-                        N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
-                        
-                        Ni(1,:     ,igauss) = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-                        N (1,1:2:17,igauss) = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-                        N (2,2:2:18,igauss) = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-                    end
+                    N  = zeros(2,18);
+                    N9 =      (1 - ksi^2)*(1 - eta^2);
+                    N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
+                    N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
+                    N6 = 0.50*(1 + ksi  )*(1 - eta^2) - 0.5*N9;
+                    N5 = 0.50*(1 - ksi^2)*(1 - eta  ) - 0.5*N9;
+                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8 + 0.5*N9);
+                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7 + 0.5*N9);
+                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6 + 0.5*N9);
+                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
+                    
+                    Ni  = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
+                    N (1,1:2:17) = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
+                    N (2,2:2:18) = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
                     
                 case 'AHMAD9'
-                    N  = zeros(3,3*9,ngauss);
-                    Ni = zeros(1,  9,ngauss);
+                    N  = zeros(3,3*9);
                     Id = eye(3);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
-                        
-                        N9 =      (1 - ksi^2)*(1 - eta^2);
-                        N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
-                        N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
-                        N6 = 0.50*(1 + ksi  )*(1 - eta^2) - 0.5*N9;
-                        N5 = 0.50*(1 - ksi^2)*(1 - eta  ) - 0.5*N9;
-                        N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8 + 0.5*N9);
-                        N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7 + 0.5*N9);
-                        N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6 + 0.5*N9);
-                        N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
-                        
-                        Ni(1,:,igauss) = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-                        N (:,:,igauss) = [  N1*Id, N2*Id, N3*Id, ...
-                            N4*Id, N5*Id, N6*Id, ...
-                            N7*Id, N8*Id, N9*Id ];
-                    end
+                    
+                    N9 =      (1 - ksi^2)*(1 - eta^2);
+                    N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
+                    N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
+                    N6 = 0.50*(1 + ksi  )*(1 - eta^2) - 0.5*N9;
+                    N5 = 0.50*(1 - ksi^2)*(1 - eta  ) - 0.5*N9;
+                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8 + 0.5*N9);
+                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7 + 0.5*N9);
+                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6 + 0.5*N9);
+                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
+                    
+                    Ni  = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
+                    N (:,:) = [  N1*Id, N2*Id, N3*Id, ...
+                        N4*Id, N5*Id, N6*Id, ...
+                        N7*Id, N8*Id, N9*Id ];
                     
                 case 'Q8'
-                    N  = zeros(2,16,ngauss);
-                    Ni = zeros(1, 8,ngauss);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
-                        
-                        N8 = 0.50*(1 - ksi  )*(1 - eta^2);
-                        N7 = 0.50*(1 - ksi^2)*(1 + eta  );
-                        N6 = 0.50*(1 + ksi  )*(1 - eta^2);
-                        N5 = 0.50*(1 - ksi^2)*(1 - eta  );
-                        N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8);
-                        N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7);
-                        N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6);
-                        N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8);
-                        
-                        Ni(1,:     ,igauss) = [N1 N2 N3 N4 N5 N6 N7 N8];
-                        N (1,1:2:15,igauss) = [N1 N2 N3 N4 N5 N6 N7 N8];
-                        N (2,2:2:16,igauss) = [N1 N2 N3 N4 N5 N6 N7 N8];
-                    end
+                    N  = zeros(2,16);
+                    N8 = 0.50*(1 - ksi  )*(1 - eta^2);
+                    N7 = 0.50*(1 - ksi^2)*(1 + eta  );
+                    N6 = 0.50*(1 + ksi  )*(1 - eta^2);
+                    N5 = 0.50*(1 - ksi^2)*(1 - eta  );
+                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8);
+                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7);
+                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6);
+                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8);
+                    
+                    Ni = [N1 N2 N3 N4 N5 N6 N7 N8];
+                    N (1,1:2:15) = [N1 N2 N3 N4 N5 N6 N7 N8];
+                    N (2,2:2:16) = [N1 N2 N3 N4 N5 N6 N7 N8];
                     
                 case 'AHMAD8'
                     N  = zeros(3,3*8,ngauss);
-                    Ni = zeros(1,  8,ngauss);
                     Id = eye(3);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
-                        
-                        N8 = 0.50*(1 - ksi  )*(1 - eta^2);
-                        N7 = 0.50*(1 - ksi^2)*(1 + eta  );
-                        N6 = 0.50*(1 + ksi  )*(1 - eta^2);
-                        N5 = 0.50*(1 - ksi^2)*(1 - eta  );
-                        N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8);
-                        N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7);
-                        N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6);
-                        N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8);
-                        
-                        Ni(1,:,igauss) = [N1 N2 N3 N4 N5 N6 N7 N8];
-                        N (:,:,igauss) = [ N1*Id, N2*Id, N3*Id, ...
-                            N4*Id, N5*Id, N6*Id, ...
-                            N7*Id, N8*Id ];
-                    end
+                    N8 = 0.50*(1 - ksi  )*(1 - eta^2);
+                    N7 = 0.50*(1 - ksi^2)*(1 + eta  );
+                    N6 = 0.50*(1 + ksi  )*(1 - eta^2);
+                    N5 = 0.50*(1 - ksi^2)*(1 - eta  );
+                    N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8);
+                    N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7);
+                    N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6);
+                    N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8);
+                    
+                    Ni = [N1 N2 N3 N4 N5 N6 N7 N8];
+                    N (:,:) = [ N1*Id, N2*Id, N3*Id, ...
+                        N4*Id, N5*Id, N6*Id, ...
+                        N7*Id, N8*Id ];
                     
                 case 'Q4'
-                    N  = zeros(2,8,ngauss);
-                    Ni = zeros(1,4,ngauss);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
-                        
-                        N4 = 0.25*(1 - ksi)*(1 + eta);
-                        N3 = 0.25*(1 + ksi)*(1 + eta);
-                        N2 = 0.25*(1 + ksi)*(1 - eta);
-                        N1 = 0.25*(1 - ksi)*(1 - eta);
-                        
-                        Ni(1,:    ,igauss) = [N1 N2 N3 N4];
-                        N (1,1:2:7,igauss) = [N1 N2 N3 N4];
-                        N (2,2:2:8,igauss) = [N1 N2 N3 N4];
-                    end
+                    N  = zeros(2,8);
+                    N4 = 0.25*(1 - ksi)*(1 + eta);
+                    N3 = 0.25*(1 + ksi)*(1 + eta);
+                    N2 = 0.25*(1 + ksi)*(1 - eta);
+                    N1 = 0.25*(1 - ksi)*(1 - eta);
+                    
+                    Ni = [N1 N2 N3 N4];
+                    N (1,1:2:7) = [N1 N2 N3 N4];
+                    N (2,2:2:8) = [N1 N2 N3 N4];
                     
                 case 'AHMAD4'
-                    N  = zeros(3,3*4,ngauss);
-                    Ni = zeros(1,  4,ngauss);
+                    N  = zeros(3,3*4);
                     Id = eye(3);
-                    for igauss = 1:ngauss
-                        ksi = pointArray(igauss,1);
-                        eta = pointArray(igauss,2);
-                        
-                        N4 = 0.25*(1 - ksi)*(1 + eta);
-                        N3 = 0.25*(1 + ksi)*(1 + eta);
-                        N2 = 0.25*(1 + ksi)*(1 - eta);
-                        N1 = 0.25*(1 - ksi)*(1 - eta);
-                        
-                        Ni(1,:,igauss) = [N1 N2 N3 N4];
-                        N (:,:,igauss) = [ N1*Id, N2*Id, N3*Id, N4*Id ];
-                    end
+                    N4 = 0.25*(1 - ksi)*(1 + eta);
+                    N3 = 0.25*(1 + ksi)*(1 + eta);
+                    N2 = 0.25*(1 + ksi)*(1 - eta);
+                    N1 = 0.25*(1 - ksi)*(1 - eta);
+                    
+                    Ni = [N1 N2 N3 N4];
+                    N (:,:,igauss) = [ N1*Id, N2*Id, N3*Id, N4*Id ];
                     
             end
         end

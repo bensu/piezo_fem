@@ -27,7 +27,7 @@ classdef Mesh
                 v = zeros(nuso,3);      % Vector directions (v3) of the node in each element
                 for iele = 1:nuso
                     % Get the jacobian of the element
-                    dN = Element.shapefunsder([ksi(localNode(iele)),eta(localNode(iele))],eleType);
+                    dN = Element.shapefunsder(ksi(localNode(iele)),eta(localNode(iele)),eleType);
                     elecoords = connect(ele(iele),:);
                     nodalCoords = coords(elecoords,:);
                     jac = dN*nodalCoords;
