@@ -17,7 +17,13 @@ classdef Physics
     end
     methods (Static)
         function L = apply_load(element,order,q)
-            
+        % L = apply_load(element,order,q)
+        % Generates a load dof vector by integrating a constant load along
+        % the element.
+        % L [n_ele_dofs x 1][Float]: Load vector
+        % element [Element]
+        % order [Int]: Gauss integration order
+        % q [3 x 1][Float]: Constant applied load
             function L_out = apply_load_in_point(ksi,eta,zeta)
                 NN = Element.shape_to_diag(3, ... 
                         element.N(ksi,eta)); 
@@ -28,7 +34,7 @@ classdef Physics
             L = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function K = K_Shell(element,material,order)
-        % K [20x20][Float] Stiffness as calculated in Cook 361 12.4-14
+        % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
         % element [Element]: Requires methods jacobian and B
         % material[Material]: Requires methods E and nu
         % order [Int]: Gauss integration order
@@ -70,12 +76,18 @@ classdef Physics
             % Returns the Elastic Tensor for Plain Stress in a shell
             % Cook pg 361 12.5-12
             C = Physics.ElasticPlainStress(material);
-            C(5,5) = (5/6)*C(5,5);
-            C(6,6) = (5/6)*C(6,6);
+            c = 5/6;
+            C(5,5) = c*C(5,5);
+            C(6,6) = c*C(6,6);
             C(3,:) = [];
             C(:,3) = [];
         end
         function B = B_Shell(element,ksi,eta,zeta)
+            % B = B_Shell(element,ksi,eta,zeta)
+            % B [Float][6 x n_ele_dofs]: Relates the element's dof values 
+            % with the mechanical strain vector. Cook [12.5-10]
+            % element [Element]
+            % ksi, eta, zeta [Float][Scalar] in [-1,1] local coordinates            
             dofs_per_node = 5;
             % Prepare values
             v = element.normals;
@@ -85,31 +97,33 @@ classdef Physics
             dN = invJac(:,1:2)*element.dN(ksi,eta);
 
             B  = zeros(6,element.n_nodes*dofs_per_node);
-            % B matrix has the same structure for each node and comes from
-            % putting all the B_coords next to each other.
-            % Loop through the mesh.connect coords and get each B_node, then add it
-            % to its columns in the B matrix
+            % B matrix has the same structure for each node, written as
+            % [aux1 aux2].
+            % Loop through the mesh.connect coords and get each B_node, 
+            % then add it to its columns in the B matrix
             for n = 1:element.n_nodes
-                v1 = v(:,1,n);
-                v2 = v(:,2,n);
+                v1 = v(:,1,n);  % In Cook [12.5-3] as {l1i,m1i,n1i} 
+                v2 = v(:,2,n);  % In Cook [12.5-3] as {l2i,m2i,n2i} 
                 dZN = dN(:,n)*zeta + N(n)*invJac(:,3);
-                aux1 = [ dN(1,n)         0          0
-                                 0  dN(2,n)         0
-                                 0          0  dN(3,n)
-                         dN(2,n) dN(1,n)         0
-                                 0  dN(3,n) dN(2,n)
-                         dN(3,n)         0  dN(1,n) ];
-
+                % aux1: Part of node's B unrelated to rotational dofs and zeta
+                aux1 = [ dN(1,n)    0           0
+                         0          dN(2,n)     0
+                         0          0           dN(3,n)
+                         dN(2,n)    dN(1,n)     0
+                         0          dN(3,n)     dN(2,n)
+                         dN(3,n)    0           dN(1,n) ];
+                % aux2: Part of node's B related to rotational dofs and zeta
                 aux2 = [ -v2.*dZN                        v1.*dZN
                          -v2(1)*dZN(2) - v2(2)*dZN(1)    v1(1)*dZN(2) + v1(2)*dZN(1)
                          -v2(2)*dZN(3) - v2(3)*dZN(2)    v1(2)*dZN(3) + v1(3)*dZN(2)
                          -v2(1)*dZN(3) - v2(3)*dZN(1)    v1(1)*dZN(3) + v1(3)*dZN(1) ]*0.5*element.thickness(n);
+                % Add that node's part to the complete B
                 B(:,index_range(dofs_per_node,n)) = [aux1 aux2];
             end
         end
         function H_out = H
             % H_out = H
-            % H_out [6x9] Cook pg 181 6.7-5
+            % H_out [6x9] Cook pg 181 [6.7-5]
             % goes from diff_U_xyz to Strain vector
             H_out = zeros(6,9);
             H_out([1 10 18 22 26 35 42 47 51]) = 1;
