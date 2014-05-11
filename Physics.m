@@ -16,19 +16,17 @@ classdef Physics
         end
     end
     methods (Static)
-        function L = apply_load(element,order,q)
+        function L = apply_volume_load(element,order,q)
         % L = apply_load(element,order,q)
         % Generates a load dof vector by integrating a constant load along
         % the element.
         % L [n_ele_dofs x 1][Float]: Load vector
         % element [Element]
         % order [Int]: Gauss integration order
-        % q [3 x 1][Float]: Constant applied load
+        % q [dof x 1][Float]: Constant applied load
             function L_out = apply_load_in_point(ksi,eta,zeta)
-                NN = Element.shape_to_diag(3, ... 
-                        element.N(ksi,eta)); 
-                jac = element.jacobian(ksi,eta,zeta);
-                L_out = NN'*det(jac)*q;
+                NN = Element.shape_to_diag(length(q),element.N(ksi,eta)); 
+                L_out = NN'*det(element.jacobian(ksi,eta,zeta))*q;
             end
             fun_in = @(xi,eta,mu) (apply_load_in_point(xi,eta,mu));
             L = Integral.Volume3D(fun_in,order,[-1 1]);

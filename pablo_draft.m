@@ -4,33 +4,28 @@ close all
 
 %% IMPORT MESH
 
-ele_type = 'AHMAD9';
-n = 10;
+ele_type = 'AHMAD9';    % Element Type
+n = 10;                 % Number of elements along each side
+
 switch ele_type
     case 'AHMAD9'
         nodes_per_ele = 9;
-        % vdof: DOFs in K that are not rotational
-        vdof = [1:3 6:8 11:13 16:18 21:23 26:28 31:33 36:38 41:43];
-        coords_in = load(['tests/scordelis/nodos' num2str(n) '_9.txt']);
-        connect_in = load(['tests/scordelis/elementos' num2str(n) '_9.txt']);
     case 'AHMAD8'
         nodes_per_ele = 8;
-        vdof = [1:3 6:8 11:13 16:18 21:23 26:28 31:33 36:38];
-        coords_in = load(['tests/scordelis/nodos' num2str(n) '_8.txt']);
-        connect_in = load(['tests/scordelis/elementos' num2str(n) '_8.txt']);
     case 'AHMAD4'
-        nodes_per_ele = 4;
-        vdof = [1:3 6:8 11:13 16:18];
-        coords_in = load(['tests/scordelis/nodos' num2str(n) '_4.txt']);
-        connect_in = load(['tests/scordelis/elementos' num2str(n) '_4.txt']);        
+        nodes_per_ele = 4;      
 end
 
-% Format Input Mesh
+coords_in = load(['tests/scordelis/nodos' num2str(n) '_' ...
+                          num2str(nodes_per_ele) '.txt']);
+connect_in = load(['tests/scordelis/elementos' num2str(n) '_' ...
+                          num2str(nodes_per_ele) '.txt']);
 
+% Format Input Mesh:
 % Remove Extra Columns
 coords_in(:,[1 end]) = [];
 connect_in(:,1) = [];
-% Clean and reformat mesh.connect Matrix
+% Clean and reformat connect matrix
 connect_in(connect_in == 0) = [];
 connect_in = reshape(connect_in,[],nodes_per_ele);
 
@@ -38,13 +33,11 @@ to = 0.0025;
 t = to*ones(1,size(coords_in,1));
 
 mesh = Mesh(ele_type,coords_in,connect_in,t);
-dofs_per_node = 5;                      % Dofs per Node
+dofs_per_node = 5;  % Dofs per Node
 dofs_per_ele = 0;
 n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
 
-% mesh.thickness
-
-%% PHYSICAL PROPERTIES
+%% MATERIAL
 
 E = 4.32E8;
 nu = 0.0;
@@ -56,24 +49,11 @@ fun_in = @(element) Physics.K_Shell(element,material,3);
 physics = Physics(dofs_per_node,dofs_per_ele,fun_in);
 fem = FemCase(mesh,physics);
 
-%% Vector de cargas
+%% LOADS
 
-% Puntos y pesos de Gauss
-rstInt = 3*ones(1,3);
-[wgauss, gpts, ng] = Integral.gauss(rstInt);
-
-R = zeros(n_dofs,1);
-q = [0 0 -360]';
-
-% R = mesh.assembly_vector(dofs_per_node,dofs_per_ele,fun_in);
-% Assembly
-for e = 1:mesh.n_ele
-    element = mesh.ele(e);
-    elecoords = mesh.connect(e,:);
-    re = Physics.apply_load(element,3,q);
-    ele_dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,e);
-    R(ele_dofs(vdof)) = R(ele_dofs(vdof)) + re;
-end
+q = [0 0 -360 0 0]';
+fun_in = @(element) Physics.apply_volume_load(element,3,q);
+R = mesh.assembly_vector(dofs_per_node,dofs_per_ele,fun_in);
 
 fem.loads.node_vals.dof_list_in(R);
 
@@ -87,7 +67,7 @@ bc(coords_in(:,1) > 25 - tol,[1 5]) = true;  % simetría transversal
 
 fem.bc.node_vals.vals = bc;
 
-%% Solution
+%% SOLVE
 
 fem.solve();
 
