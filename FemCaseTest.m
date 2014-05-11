@@ -15,11 +15,11 @@ classdef FemCaseTest < matlab.unittest.TestCase
             % http://en.wikipedia.org/wiki/Deflection_%28engineering%29
             %#End_loaded_cantilever_beams
             expected_dz = (q*area)*(a^3)/(3*E*I)
-            expected_phi = (q*area)*(a^2)/(2*E*I)
+            expected_phi = -(q*area)*(a^2)/(2*E*I)
             
             % Elements along the side
-            m = 15;
-            n = 2;
+            m = 100;
+            n = 40;
             % With 
             F = (q*area)/(n*2);   % Force at each node.
 
@@ -50,7 +50,7 @@ classdef FemCaseTest < matlab.unittest.TestCase
             % Check if the obtained values are the expected ones
             PlotMesh(mesh.coords + 1000*fem.dis.node_vals.vals(:,1:3), ...
                 mesh.connect, ...
-                fem.bc.node_vals.vals, ...
+                ~fem.bc.node_vals.vals, ...
                             fem.reactions.node_vals.vals);
             fem.dis.node_vals.vals;
             max_dis = max(fem.dis.all_dofs)
