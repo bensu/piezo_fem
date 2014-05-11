@@ -42,6 +42,8 @@ dofs_per_node = 5;                      % Dofs per Node
 dofs_per_ele = 0;
 n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
 
+% mesh.thickness
+
 %% PHYSICAL PROPERTIES
 
 E = 4.32E8;
@@ -50,7 +52,7 @@ material = Material(E,nu,1);
 
 %% FEM
 
-fun_in = @(element) Physics.K_Shell2(element,material,3);
+fun_in = @(element) Physics.K_Shell(element,material,3);
 physics = Physics(dofs_per_node,dofs_per_ele,fun_in);
 fem = FemCase(mesh,physics);
 

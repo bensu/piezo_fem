@@ -5,8 +5,9 @@ classdef Factory
             % mesh [Mesh]: New Generated mesh
             % sides = [a,b,c] [1x3][Float]: sides of the shell 
             % n_elements = [m,n] [1x2][Int]: num of elements in each edge
-            [coords, connect, node_normals] = Factory.Shell(n_elements,sides);
-            mesh = Mesh(coords,connect,node_normals);
+            [coords, connect] = Factory.Shell(n_elements,sides);
+            thickness = sides(3)*ones(1,size(coords,1));
+            mesh = Mesh('AHMAD4',coords,connect,thickness);
         end
         function [coords, connect, node_normals] = Shell(n_elements,sides)
             % mesh = ShellMesh(n_elements,sides,E,nu,rho)
@@ -94,6 +95,7 @@ classdef Factory
                     end
                 end
             end
+           connections = connections(:,[1 2 4 3 5 6 8 7]);
         end
     end
 end

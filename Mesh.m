@@ -50,7 +50,7 @@ classdef Mesh
                     ele_coords = mesh.coords(ele_nodes,:);
                     
                     % Get some simplified Jacobian of the element
-                    dN = element.shapefunsder(ksi(localNode(e)),eta(localNode(e)));
+                    dN = element.dN(ksi(localNode(e)),eta(localNode(e)));
                     jac = dN*ele_coords;
                     
                     % Use the jacobian to get v3

@@ -20,22 +20,12 @@ classdef Physics
             
             function L_out = apply_load_in_point(ksi,eta,zeta)
                 NN = Element.shape_to_diag(3, ... 
-                        element.shapefuns(ksi,eta)); 
+                        element.N(ksi,eta)); 
                 jac = element.jacobian(ksi,eta,zeta);
                 L_out = NN'*det(jac)*q;
             end
             fun_in = @(xi,eta,mu) (apply_load_in_point(xi,eta,mu));
             L = Integral.Volume3D(fun_in,order,[-1 1]);
-        end
-        function K = K_Shell2(element,material,order)
-            C = Physics.ElasticShell(material);
-            function K_in_point = K_in_point(ksi,eta,zeta)
-                jac = element.jacobian(ksi,eta,zeta);
-                B = Element.T(jac)*element.B(5,ksi,eta,zeta); % Cook [7.3-10]
-                K_in_point = B'*C*B*det(jac);
-            end
-            fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
-            K = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function K = K_Shell(element,material,order)
         % K [20x20][Float] Stiffness as calculated in Cook 361 12.4-14
@@ -43,14 +33,11 @@ classdef Physics
         % material[Material]: Requires methods E and nu
         % order [Int]: Gauss integration order
             C = Physics.ElasticShell(material);
-            function out = K_in_point(xi,eta,mu)
-                % Compute Jacobian
-                jacobian = element.jacobian(xi,eta,mu);
-                % Linematic matrix for stiffness
-                B = Physics.B(element,xi,eta,mu);            
-                out = B'*C*B*det(jacobian);
-                % POSIBLE ERROR: va con t multiplicando?
-                % B'*D*B*wtx*wty*det(jacobian);
+            function K_in_point = K_in_point(ksi,eta,zeta)
+                jac = element.jacobian(ksi,eta,zeta);
+                B = Element.T(jac)* ...
+                    Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
+                K_in_point = B'*C*B*det(jac);
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,order,[-1 1]);
@@ -88,56 +75,44 @@ classdef Physics
             C(3,:) = [];
             C(:,3) = [];
         end
-        function B_out = B(element,xi,eta,mu)
-            % B_out [6x20] Computes B matix - Cook 361 12.5-10
-            % B = H*T_j*N_devs
-            B_out = Physics.H*Physics.invT(element,xi,eta,mu)*...
-                                Physics.NdevsShell(element,xi,eta,mu);
-        end     
+        function B = B_Shell(element,ksi,eta,zeta)
+            dofs_per_node = 5;
+            % Prepare values
+            v = element.normals;
+            N  = element.N(ksi,eta);
+            jac = element.jacobian(ksi,eta,zeta);
+            invJac = jac \ eye(3);
+            dN = invJac(:,1:2)*element.dN(ksi,eta);
+
+            B  = zeros(6,element.n_nodes*dofs_per_node);
+            % B matrix has the same structure for each node and comes from
+            % putting all the B_coords next to each other.
+            % Loop through the mesh.connect coords and get each B_node, then add it
+            % to its columns in the B matrix
+            for n = 1:element.n_nodes
+                v1 = v(:,1,n);
+                v2 = v(:,2,n);
+                dZN = dN(:,n)*zeta + N(n)*invJac(:,3);
+                aux1 = [ dN(1,n)         0          0
+                                 0  dN(2,n)         0
+                                 0          0  dN(3,n)
+                         dN(2,n) dN(1,n)         0
+                                 0  dN(3,n) dN(2,n)
+                         dN(3,n)         0  dN(1,n) ];
+
+                aux2 = [ -v2.*dZN                        v1.*dZN
+                         -v2(1)*dZN(2) - v2(2)*dZN(1)    v1(1)*dZN(2) + v1(2)*dZN(1)
+                         -v2(2)*dZN(3) - v2(3)*dZN(2)    v1(2)*dZN(3) + v1(3)*dZN(2)
+                         -v2(1)*dZN(3) - v2(3)*dZN(1)    v1(1)*dZN(3) + v1(3)*dZN(1) ]*0.5*element.thickness(n);
+                B(:,index_range(dofs_per_node,n)) = [aux1 aux2];
+            end
+        end
         function H_out = H
             % H_out = H
             % H_out [6x9] Cook pg 181 6.7-5
             % goes from diff_U_xyz to Strain vector
             H_out = zeros(6,9);
             H_out([1 10 18 22 26 35 42 47 51]) = 1;
-        end
-        function T_out = invT(element,xi,eta,mu)
-            % T_out [9x9][Float] Cook 360 12.5-8
-            inv_jac = inv(element.jacobian(xi,eta,mu));
-            T_out = blkdiag(inv_jac,inv_jac,inv_jac);
-        end
-        function Ndevs_out = NdevsShell(element,xi,eta,mu)
-            % Ndevs_out = Ndevs(element,xi,eta,mu)
-            % Ndevs_out [9x20] Cook pg 360 12.5-9 from Dofs U_i to diffU
-            % It belongs in Physics because it contains the way the 
-            % mechanical degrees of freedom combine to yield the 
-            % displacement field
-            dim = 3;
-            ndofs = 5;
-            n_nodes = element.n_nodes;
-            t_at_node = element.thickness_at_node; 
-            dN = [Element.dNdxi_Q4(xi,eta); Element.dNeta_Q4(xi,eta)];
-            N = Element.N_Q4(xi,eta);
-            mu_mat = element.mu_matrix;
-            Ndevs_out = zeros(dim^2,n_nodes*ndofs);
-            % The matrix in Cook is specified for one node with subscript i
-            % The loop with 'node' computes each node matrix in aux, and then
-            % stores it in Ndevs_out
-            % The loop with 'j' computes aux every 3 rows, which correspond
-            % to u, then v, and then w.
-            for node = 1:n_nodes
-                aux = zeros(dim^2,ndofs);
-                for j = 1:dim
-                    aux2 = zeros(dim,ndofs);
-                    aux2(1:2,j) = dN(:,node);
-                    aux2(1:2,4:5) = 0.5*t_at_node(node)*mu* ...
-                                            dN(:,node)*mu_mat(j,:,node);
-                    aux2(3,4:5) = 0.5*t_at_node(node)* ...
-                                            N(node)*mu_mat(j,:,node);
-                    aux(index_range(dim,j),:) = aux2;
-                end 
-                Ndevs_out(:,index_range(ndofs,node)) = aux;
-            end
         end
     end
 end
