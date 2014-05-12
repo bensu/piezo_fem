@@ -33,8 +33,9 @@ classdef Physics
                 jac = element.jacobian(ksi,eta,zeta);
                 cosines = Element.direction_cosines(jac);
                 inv_jac = jac \ eye(3);
-                dN_ele = zeros(3,2);
-                dN_ele(3,:) = [-1 1];
+%                 dN_ele = zeros(3,2);
+%                 dN_ele(3,:) = [-1 1];
+                dN_ele = [0 0 1]';
                 dN_xyz = inv_jac*dN_ele;
                 % Mechanics Part
                 B_mech = Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
@@ -44,6 +45,7 @@ classdef Physics
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,order,[-1 1]);
+            cond(K)
             rank(K)
             size(K)
         end

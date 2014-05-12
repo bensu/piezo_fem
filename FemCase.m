@@ -35,10 +35,23 @@ classdef FemCase < handle
             S = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
                                          fem.physics.dofs_per_ele,  ...
                                          fem.physics.k);
-            size(S(F,F))
-            rank(S(F,F))
             D = zeros(size(S,1),1);
-            D(F) = S(F,F) \ L(F);
+            
+            if (false)
+                P = diag(sqrt(diag(S)));
+                inv_P = inv(P);
+                S_scaled = inv_P*S*inv_P;
+                L_scaled = inv_P*L;
+                D_scaled = S_scaled(F,F) \ L_scaled(F);
+                D(F) = inv_P(F,F)*D_scaled;
+                cond(S)
+                cond(S_scaled)
+                size(S_scaled(F,F))
+                rank(S_scaled(F,F))
+            else
+                D(F) = S(F,F) \ L(F);
+            end
+
             fem.dis.dof_list_in(D);
             fem.reactions.dof_list_in(S*D);
             edge = fem.mesh.find_nodes(@(x,y,z) (abs(x)<1e-5));
