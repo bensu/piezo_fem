@@ -37,17 +37,21 @@ classdef FemCase < handle
                                          fem.physics.k);
             D = zeros(size(S,1),1);
             
-            if (false)
+            % For unit reasons (i.e. piezoelectric constant, some terms in 
+            % the stiffness matrix (S) are several orders of magnitude 
+            % larger than others. It is desirable to improve cond(S) before
+            % solving the system.
+            if (cond(S(F,F)) > 1e8)
                 P = diag(sqrt(diag(S)));
                 inv_P = inv(P);
                 S_scaled = inv_P*S*inv_P;
                 L_scaled = inv_P*L;
                 D_scaled = S_scaled(F,F) \ L_scaled(F);
                 D(F) = inv_P(F,F)*D_scaled;
-                cond(S)
-                cond(S_scaled)
-                size(S_scaled(F,F))
-                rank(S_scaled(F,F))
+%                 cond(S(F,F))
+%                 cond(S_scaled(F,F))
+%                 size(S_scaled(F,F))
+%                 rank(S_scaled(F,F))
             else
                 D(F) = S(F,F) \ L(F);
             end

@@ -22,32 +22,41 @@ classdef Physics
         % element [Element]: Requires methods jacobian and B
         % material[Material]: Requires methods E, nu, and D
         % order [Int]: Gauss integration order
-            elastic = Physics.ElasticShell(material);
-            piezo = material.D(:,[1 2 4 5 6]); 
-            electric = diag(material.e);
             % Constitutive Relationship
+            % Both material properties skip 3rd col because it is a plain
+            % stress problem
+            elastic = Physics.ElasticShell(material)
+            piezo = material.D(:,[1 2 4 5 6]);  
+            electric = diag(material.e);
             C = [   elastic piezo';
-                    piezo   electric];   
+                    piezo   electric];
+            % Function to be integrated
             function K_in_point = K_in_point(ksi,eta,zeta)
-                % Piezo Part - could be done outside K_in_point
+                % Piezo Part, generates the Electric Field (only z
+                % component from 2 or 1 voltage element dof.
                 jac = element.jacobian(ksi,eta,zeta);
                 cosines = Element.direction_cosines(jac);
                 inv_jac = jac \ eye(3);
-%                 dN_ele = zeros(3,2);
-%                 dN_ele(3,:) = [-1 1];
-                dN_ele = [0 0 1]';
-                dN_xyz = inv_jac*dN_ele;
+                dof_per_ele = 1;
+                if (dof_per_ele == 2)
+                    dN_ele = zeros(3,2);
+                    % V_bottom is first, V_top goes second.
+                    % Together they form E_z = V_top - V_bottom
+                    dN_ele(3,:) = [-1 1];
+                else
+                    dN_ele = [0 0 1]';
+                    dN_xyz = inv_jac*dN_ele;
+                end
                 % Mechanics Part
                 B_mech = Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
                 % Join both and trasform the coordinates
-                B = blkdiag(Element.T(jac),cosines)*blkdiag(B_mech,dN_xyz);
+                B = blkdiag(Element.T(jac)*B_mech,cosines*dN_xyz);
                 K_in_point = B'*C*B*det(jac);
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,order,[-1 1]);
-            cond(K)
-            rank(K)
-            size(K)
+        end
+        function E_z = Electric_Field_z(element,ksi,eta,zeta)
         end
         function L = apply_volume_load(element,order,q)
         % L = apply_load(element,order,q)
