@@ -25,7 +25,7 @@ classdef Physics
             % Constitutive Relationship
             % Both material properties skip 3rd col because it is a plain
             % stress problem
-            elastic = Physics.ElasticShell(material)
+            elastic = Physics.ElasticShell(material);
             piezo = material.D(:,[1 2 4 5 6]);  
             electric = diag(material.e);
             C = [   elastic piezo';
@@ -55,8 +55,6 @@ classdef Physics
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,order,[-1 1]);
-        end
-        function E_z = Electric_Field_z(element,ksi,eta,zeta)
         end
         function L = apply_volume_load(element,order,q)
         % L = apply_load(element,order,q)
@@ -132,13 +130,11 @@ classdef Physics
             % Prepare values
             v = element.normals;
             N  = element.N(ksi,eta);
-            jac = element.jacobian(ksi,eta,zeta);
-            invJac = jac \ eye(3);
+            invJac = element.jacobian(ksi,eta,zeta) \ eye(3);
             dN = invJac(:,1:2)*element.dN(ksi,eta);
-
             B  = zeros(6,element.n_nodes*dofs_per_node);
-            % B matrix has the same structure for each node, written as
-            % [aux1 aux2].
+            % B matrix has the same structure for each node, 
+            % written as [aux1 aux2].
             % Loop through the mesh.connect coords and get each B_node, 
             % then add it to its columns in the B matrix
             for n = 1:element.n_nodes
