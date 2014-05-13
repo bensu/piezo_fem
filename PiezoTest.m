@@ -17,17 +17,16 @@ classdef PiezoTest < matlab.unittest.TestCase
             e3  = 12.5e-9;  % Permitivity constant [C/Nm2]
             
             % Expected Displacemente along the x and y axis
-            expected_dz = 0.8*(a^2)    % [m]
+            expected_dz = 0.8*(a^2);    % [m]
             expected_dy = 0;         % [m] because poisson = 0
             expected_V  = 1.686e3;   % [V]
             
             dofs_per_node = 5;
-            dofs_per_ele  = 0;
+            dofs_per_ele  = 1;
             
             %% MESH
-            % Taken exaclty from example, already asymmetrical
-            
-            mesh = Factory.ShellMesh('AHMAD4',[10,6],[a,b,t]);
+           
+            mesh = Factory.ShellMesh('AHMAD4',[10,5],[a,b,t]);
             
             %% MATERIAL
             piezo_matrix = zeros(3,6);
@@ -36,7 +35,7 @@ classdef PiezoTest < matlab.unittest.TestCase
 
             %% FEM and MESH
             % Create the FemCase
-            K = @(element) Physics.K_Shell(element,material,2);
+            K = @(element) Physics.K_PiezoShell(element,material,2);
             physics = Physics(dofs_per_node,dofs_per_ele,K);
             fem = FemCase(mesh,physics);
             tol = 1e-9;
@@ -57,17 +56,22 @@ classdef PiezoTest < matlab.unittest.TestCase
             fem.solve();    % SIDE EFFECTS
             %% TEST
             % Check if the obtained values are the expected ones
-            x = sort(mesh.coords(:,1));
-            w = 0.8*(x.^2);
-            hold on
-            plot(x,w)
-            plot(x,sort(fem.dis.node_vals.vals(:,3)),'k')
-            hold off
-%             fem.dis.node_vals.vals
-%             fem.dis.ele_vals.vals
-            dz = max(fem.dis.node_vals.vals(:,3))
-%             max_V   = max(fem.dis.ele_vals.all_dofs);
-            testCase.verifyEqual(true,near(expected_dz,dz));
+            
+            %             fem.dis.node_vals.vals
+            %             fem.dis.ele_vals.vals
+            dz = max(fem.dis.node_vals.vals(:,3));
+            V   = (fem.dis.ele_vals.all_dofs);
+            aux = sort([mesh.coords(mesh.connect(:,1),1) V]);
+            x = aux(:,1);
+            V = aux(:,2);
+%             plot(x,V)
+            %             w = 0.8*(x.^2);
+            %             hold on
+            %             plot(x,w)
+            %             plot(x,sort(fem.dis.node_vals.vals(:,3)),'k')
+            %             hold off
+            
+%             testCase.verifyEqual(true,near(expected_dz,dz));
 %             testCase.verifyEqual(true,near(expected_V,max_V));
             
             %% PLOT
@@ -93,16 +97,17 @@ classdef PiezoTest < matlab.unittest.TestCase
             e3  = 12.5e-9;  % Permitivity constant [C/Nm2]
             
             % Expected Displacemente along the x and y axis
-            expected_dx = 1.92e-4;   % [m]
-            expected_dy = 0;         % [m] because poisson = 0
-            expected_V  = 1.686e3;   % [V]
+            expected_dx = 1.9205e-4   % [m]
+            expected_dy = 0;       % [m] because poisson = 0
+            expected_V  = 1.6e3   % [V]
             
             dofs_per_node = 5;
             dofs_per_ele  = 1;
             
             %% MESH
             % Taken exaclty from example, already asymmetrical
-            
+%             mesh = Factory.ShellMesh('AHMAD4',[4,2],[a,b,t]);
+
             coords = [ 0.04 0.02    0;
                        0.08 0.08    0;
                        0.18 0.03    0;
@@ -150,9 +155,9 @@ classdef PiezoTest < matlab.unittest.TestCase
             fem.solve();    % SIDE EFFECTS
             %% TEST
             % Check if the obtained values are the expected ones
-            max_dis = max(fem.dis.node_vals.all_dofs);
-            min_dis = min(fem.dis.node_vals.all_dofs);
-            max_V   = max(fem.dis.ele_vals.all_dofs);
+            max_dis = max(fem.dis.node_vals.all_dofs)
+            min_dis = min(fem.dis.node_vals.all_dofs)
+            max_V   = max(fem.dis.ele_vals.all_dofs)
             testCase.verifyEqual(true,near(expected_dx,max_dis));
             testCase.verifyEqual(true,near(expected_dy,min_dis));
             testCase.verifyEqual(true,near(expected_V,max_V));

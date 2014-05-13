@@ -61,7 +61,7 @@ classdef Factory
             ny = 2*n + 1; % Number of nodes in y direction
             dx = sides(1)/(nx-1);    % Distance between points in x
             dy = sides(2)/(ny-1);    % Distance between points in y
-            z = sides(3);               % Height where the plate is placed
+            z = 0;            % Height where the plate is placed
             
             % Generate coordinates
             coords = zeros(nx*ny,3);

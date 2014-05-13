@@ -26,9 +26,9 @@ classdef Physics
             % Both material properties skip 3rd col because it is a plain
             % stress problem
             elastic = Physics.ElasticShell(material);
-            piezo = -material.D(:,[1 2 4 5 6]);  
-            electric = -diag(material.e);
-            C = [   elastic  piezo';
+            piezo = material.D(:,[1 2 4 5 6]);  
+            electric = diag(material.e);
+            C = [   elastic piezo';
                     piezo   electric];
             % Function to be integrated
             function K_in_point = K_in_point(ksi,eta,zeta)
@@ -86,13 +86,12 @@ classdef Physics
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,order,[-1 1]);
         end
-        function K = K_Shell_selective(element,material,normal_order,shear_order)
+        function K = K_Shell_selective(element,material,norma_,shear_order)
         % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
-        % with selective integration
         % element [Element]: Requires methods jacobian and B
         % material[Material]: Requires methods E and nu
-        % normal_order [Int]: Gauss integration order for normal part
-        % shear_order  [Int]: Gauss integration order for shear part
+        % t_order [Int]: Gauss integration order for transve
+        % shear_order [Int]: Gauss integration order for shear part
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(c_matrix,ksi,eta,zeta)
                 jac = element.jacobian(ksi,eta,zeta);
@@ -105,10 +104,10 @@ classdef Physics
             fun_shear = @(xi,eta,mu) (K_in_point(C_shear,xi,eta,mu));
             K_s = Integral.Volume3D(fun_shear,shear_order,[-1 1]);
             % Transverse part
-            C_n = C;    C_n(4:5,4:5) = 0;
-            fun_n = @(xi,eta,mu) (K_in_point(C_n,xi,eta,mu));
-            K_n = Integral.Volume3D(fun_n,normal_order,[-1 1]);
-            K = K_s + K_n;
+            C_t = C;    C_t(4:5,4:5) = 0;
+            fun_t = @(xi,eta,mu) (K_in_point(C_t,xi,eta,mu));
+            K_t = Integral.Volume3D(fun_t,t_order,[-1 1]);
+            K = K_s + K_t;
         end
         function C = Elastic(material)
             % Computes the Elastic Tensor in matrix form for an Isotropic
