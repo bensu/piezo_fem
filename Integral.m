@@ -132,6 +132,35 @@ classdef Integral
                     %         w  = [wa wb wc wc wb wa];
             end
         end
+        function mat_out = Surface2D(fun_in,order,interval)
+            % mat_out = Surface2D(fun_in,order,interval)
+            % mat_out [fun_size,fun_size]
+            % fun_in [Fhandle] function(ksi,eta) to be integrated
+            % order [Int]: Gauss integration
+            % interval [1x2][Float]: Surface sides for integration
+            require(isnumeric(order), ...
+                'ArgumentError: order should be numeric');
+            require(order > 0, ...
+                'ArgumentError: order should be > 0');
+            require(~mod(order,1), ...
+                'ArgumentError: order should be integer');
+            require(length(interval)==2, ...
+                'ArgumentError: interval should have two numbers');
+            require(isnumeric(interval), ...
+                'ArgumentError: interval should be numeric');
+            [gauss_p,gauss_w] = Integral.lgwt(order,interval(1),interval(2));     % sampling points & weights
+            mat_out = zeros(size(fun_in(0,0))); % Initialization of Matrix
+            % Numerical integration
+            for int_xi = 1:order
+                xi  = gauss_p(int_xi,1); % sampling point in x-axis
+                wtx = gauss_w(int_xi,1); % weight in x-axis	
+                for int_eta = 1:order
+                    eta = gauss_p(int_eta,1); % sampling point in y-axis
+                    wty = gauss_w(int_eta,1); % weight in y-axis
+                    mat_out = mat_out + wtx*wty*fun_in(xi,eta);
+                end
+            end
+        end
         function mat_out = Volume3D(fun_in,order,interval)
             % mat_out = Volume3D(fun_in,fun_size,order,interval)
             % mat_out [fun_size,fun_size]

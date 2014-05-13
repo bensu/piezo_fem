@@ -56,6 +56,42 @@ classdef Physics
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,order,[-1 1]);
         end
+        function L = apply_surface_load(element,order,q,s_coord,s_val)
+        % L = apply_load(element,order,q)
+        % Generates a load dof vector by integrating a constant load along
+        % an element's surface.
+        % L [n_ele_dofs x 1][Float]: Load vector
+        % element [Element]
+        % order [Int]: Gauss integration order
+        % q [dof x 1][Float]: Constant applied load
+        % s_coord [Int]: coordinate that defines the surface
+        % s_val [Float]: value that the coordinate takes, i.e. ksi = -1;
+            function L = apply_point_load(element,q,s_coord,ksi,eta,zeta)
+                % L = apply_point_load(element,q,ksi,eta,zeta)
+                % Used as lambda in apply_surface_load and apply_volume_load
+                jac = element.jacobian(ksi,eta,zeta);
+                aux = 1:3;  aux(s_coord) = [];
+                v1 = jac(aux(1),:)';
+                v2 = jac(aux(2),:)';
+                NN = Element.shape_to_diag(length(q),element.N(ksi,eta));
+                L = NN'*norm(cross(v1,v2))*q;
+            end
+            switch (s_coord)
+                case 1
+                    ksi = s_val;
+                    fun_in = @(eta,zeta) (apply_point_load( ...
+                                            element,q,s_coord,ksi,eta,zeta));
+                case 2
+                    eta = s_val;
+                    fun_in = @(ksi,zeta) (apply_point_load( ...
+                                            element,q,s_coord,ksi,eta,zeta));
+                case 3
+                    zeta = s_val;
+                    fun_in = @(ksi,eta) (apply_point_load( ...
+                                            element,q,s_coord,ksi,eta,zeta));
+            end
+            L = Integral.Surface2D(fun_in,order,[-1 1]);
+        end
         function L = apply_volume_load(element,order,q)
         % L = apply_load(element,order,q)
         % Generates a load dof vector by integrating a constant load along
@@ -64,11 +100,14 @@ classdef Physics
         % element [Element]
         % order [Int]: Gauss integration order
         % q [dof x 1][Float]: Constant applied load
-            function L_out = apply_load_in_point(ksi,eta,zeta)
-                NN = Element.shape_to_diag(length(q),element.N(ksi,eta)); 
-                L_out = NN'*det(element.jacobian(ksi,eta,zeta))*q;
+            function L = apply_point_load(element,q,ksi,eta,zeta)
+                % L = apply_point_load(element,q,ksi,eta,zeta)
+                % Used as lambda in apply_surface_load and apply_volume_load
+                NN = Element.shape_to_diag(length(q),element.N(ksi,eta));
+                L = NN'*det(element.jacobian(ksi,eta,zeta))*q;
             end
-            fun_in = @(xi,eta,mu) (apply_load_in_point(xi,eta,mu));
+            fun_in = @(ksi,eta,zeta) (apply_point_load(element,q, ...
+                ksi,eta,zeta));
             L = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function K = K_Shell(element,material,order)

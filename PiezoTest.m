@@ -106,27 +106,28 @@ classdef PiezoTest < matlab.unittest.TestCase
             
             %% MESH
             % Taken exaclty from example, already asymmetrical
-%             mesh = Factory.ShellMesh('AHMAD4',[4,2],[a,b,t]);
+            mesh = Factory.ShellMesh('AHMAD4',[4,2],[a,b,t]);
 
-            coords = [ 0.04 0.02    0;
-                       0.08 0.08    0;
-                       0.18 0.03    0;
-                       0.16 0.08    0;
-                       0    0       0;
-                       0    b       0;
-                       a    0       0;
-                       a    b       0];
-           
-            connect = [ 5 1 2 6;
-                        5 7 3 1;
-                        1 3 4 2;
-                        6 2 4 8;
-                        7 8 4 3];
-                    
-            n_node = size(coords,1);
-            thickness = t*ones(1,n_node);
-            mesh = Mesh('AHMAD4',coords,connect,thickness);                       
-            
+            %% MESH COPIED FROM BOOK
+%             coords = [ 0.04 0.02    0;
+%                        0.08 0.08    0;
+%                        0.18 0.03    0;
+%                        0.16 0.08    0;
+%                        0    0       0;
+%                        0    b       0;
+%                        a    0       0;
+%                        a    b       0];
+%            
+%             connect = [ 5 1 2 6;
+%                         5 7 3 1;
+%                         1 3 4 2;
+%                         6 2 4 8;
+%                         7 8 4 3];
+%                     
+%             n_node = size(coords,1);
+%             thickness = t*ones(1,n_node);
+%             mesh = Mesh('AHMAD4',coords,connect,thickness);                       
+%             
             %% MATERIAL
             piezo_matrix = zeros(3,6);
             piezo_matrix(3,1:3) = [e13 e13 0];
@@ -163,10 +164,10 @@ classdef PiezoTest < matlab.unittest.TestCase
             testCase.verifyEqual(true,near(expected_V,max_V));
             
             %% PLOT
-%             PlotMesh(mesh.coords + 1000*fem.dis.node_vals.vals(:,1:3), ...
-%                 mesh.connect, ...
-%                 ~fem.bc.node_vals.vals, ...
-%                             fem.reactions.node_vals.vals);
+            PlotMesh(mesh.coords + 1000*fem.dis.node_vals.vals(:,1:3), ...
+                mesh.connect, ...
+                ~fem.bc.node_vals.vals, ...
+                            fem.reactions.node_vals.vals);
         end
     end
 end

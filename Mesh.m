@@ -43,7 +43,7 @@ classdef Mesh
                 nuso = length(ele);     % Number of connect the node belongs to.
                 % Loop through those connect to find v
                 v = zeros(nuso,3);      % Vector directions (v3) of the node in each element
-                element = Element(mesh.ele_type,[],[],[]);
+                element = Element(1,mesh.ele_type,[],[],[]);
                 for e = 1:nuso
                     % Create the element
                     ele_nodes = mesh.connect(ele(e),:);
@@ -74,22 +74,53 @@ classdef Mesh
                 nodal_systems(:,:,n) = [v1 v2 v3];
             end
         end
-        function L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
-            % K = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
-            % K [n_dofs x n_dofs]
-            % dofs_per_node [Int]
-            % dofs_per_ele [Int]
-            % fun_in [Fhandle] f(element) -> [dofs_per_ele x 1]
-            % fun_in follows convention [node_dofs ele_dofs]
+        function L = integral_along_surface(mesh,dofs_per_node, ...
+                                        dofs_per_ele,s_nodes,fun_in)
+        % L = integral_along_surface(mesh,s_nodes,fun_in)
+        % s_nodes [n x 1]: nodes in the surface
+        % fun_in [FHandle](element,surface_c,surface_value)
+            ele_ids = mesh.unique_eles(s_nodes);
+            ele_s = mesh.ele_surfaces(s_nodes,ele_ids);
+            [~, s_coord, s_val] = Element.surfaces(mesh.ele_type);
+            function L_out = aux_fun(element)
+                surfaces = ele_s{element.id == ele_ids};    % Element's surface #
+                L_out = [];
+                for s = 1:length(surfaces)
+                    L_out = [L_out; fun_in(element,s_coord(s),s_val(s))];
+                end
+            end
+            ele_fun = @(element) aux_fun(element);
+            L = mesh.assembly_vector_along(ele_ids,dofs_per_node, ...
+                                                    dofs_per_ele,ele_fun);
+        end
+        function L = assembly_vector_along(mesh,ele_ids,dofs_per_node, ...
+                                                    dofs_per_ele,fun_in)
+        % L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
+        %                                    ele_ids,fun_in)
+        % K [n_dofs x n_dofs]
+        % dofs_per_node [Int]
+        % dofs_per_ele [Int]
+        % fun_in [Fhandle] f(element) -> [dofs_per_ele x 1]
+        % fun_in follows convention [node_dofs ele_dofs]
             require(all(~mod([dofs_per_node,dofs_per_ele],1)), ...
                 'ArgumentError: dofs should be integers');
             L = zeros(mesh.n_dofs(dofs_per_node,dofs_per_ele),1);
             % Loop through elements
-            for e = 1:mesh.n_ele
+            for e = ele_ids
                 ele = mesh.ele(e);
                 dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,e);
                 L(dofs) = L(dofs) + fun_in(ele);
             end
+        end
+        function L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
+        % L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
+        % L [n_dofs x 1]
+        % dofs_per_node [Int]
+        % dofs_per_ele [Int]
+        % fun_in [Fhandle] f(element) -> [dofs_per_ele x 1]
+        % fun_in follows convention [node_dofs ele_dofs]
+            L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
+                                                    1:mesh.n_ele,fun_in);
         end
         function K = assembly_matrix(mesh,dofs_per_node,dofs_per_ele,fun_in)
             % K = assembly_matrix(mesh,dofs_per_node,dofs_per_ele,fun_in)
@@ -116,10 +147,8 @@ classdef Mesh
             % the condition
             nodes = false(mesh.n_nodes,1);
             for n = 1:mesh.n_nodes
-                x = mesh.coords(n,1);
-                y = mesh.coords(n,2);
-                z = mesh.coords(n,3);
-                nodes(n) = condition(x,y,z);
+                r = mesh.coords(n,:);   % r = [x,y,z]
+                nodes(n) = condition(r(1),r(2),r(3));
             end
         end
         %% DOF helpers
@@ -161,19 +190,73 @@ classdef Mesh
         end
         %% Element Helpers
         function ele = ele(mesh,ele_id)
-            % ele = ele(mesh,ele_id)
-            % ele [Element]
-            % Create element with ID ele_id from the mesh
+        % ele = ele(mesh,ele_id)
+        % ele [Element]
+        % Create element with ID ele_id from the mesh
             nodes = mesh.ele_nodes(ele_id);
-%             v = mesh.normals(:,:,elecoords);     % Direction vectors from iele's coords
-            ele = Element(mesh.ele_type,mesh.coords(nodes,:),mesh.normals(:,:,nodes), ...
-                            mesh.thickness(nodes));
+            ele = Element(ele_id,mesh.ele_type,mesh.coords(nodes,:), ...
+                        mesh.normals(:,:,nodes),mesh.thickness(nodes));
         end
         function node_ids = ele_nodes(mesh,ele_id)
-            % nodes_ids = ele_nodes(mesh,ele_id)
-            % nodes_ids [1xnodes_per_element]
-            % Returns all the IDs corresponding to ele_id
+        % nodes_ids = ele_nodes(mesh,ele_id)
+        % nodes_ids [1xnodes_per_element]
+        % Returns all the IDs corresponding to ele_id
             node_ids = mesh.connect(ele_id,:);
+        end
+        function ele_ids = node_eles(mesh,node_id)
+        % ele_ids = node_eles(mesh,node_id)
+        % node_id [n_nodes x 1][Int]: Ids of the nodes.
+        % ele_ids {n_nodes x 1}[Int]: Ids of the elements that contain
+        % those nodes.
+            % A cell array is used because each node might return a
+            % different number of elements
+            n_nodes = length(node_id);
+            ele_ids = cell(n_nodes,1);
+            for n = 1:n_nodes
+                ele_ids{n} = find(any((mesh.connect == node_id(n))')')';
+            end
+        end
+        function ele_ids = unique_eles(mesh,node_ids)
+        % ele_ids = unique_elements(mesh,node_ids)
+        % node_id [n_nodes x 1][Int]: Ids of the nodes.
+        % ele_ids [? x 1][Int]: Ids of the elements that contain those nodes. 
+            node_eles = mesh.node_eles(node_ids);    
+            ele_ids = [];
+            for n = 1:length(node_eles)
+                ele_ids = [ele_ids node_eles{n}];
+            end
+            ele_ids = unique(ele_ids);
+        end
+        function ele_surfaces = ele_surfaces(mesh,nodes,ele_ids)
+        % ele_surfaces = ele_surfaces(mesh,nodes,ele_ids)
+        % ele_surfaces {n_ele_ids x 1}[Int] the surfaces (between 1
+        % and 6) of each element that contain the nodes.
+        % nodes: [n x 1][Int] node_ids of the nodes in the global surface
+            n_ele = length(ele_ids);    % Number of elements
+            ele_surfaces = cell(n_ele,1);
+            % surfaces contains data from the element type
+            surfaces = Element.surfaces(mesh.ele_type);
+            % Loop through all elements
+            for e = 1:n_ele
+                % Get all of its nodes
+                ele_nodes = mesh.ele_nodes(ele_ids(e));
+                % Loop through the nodes
+                ele_surface_nodes = false(1,length(ele_nodes));
+                for n = 1:length(ele_nodes)
+                    % Check if the node is in the global surface
+                    ele_surface_nodes(n) = any(nodes == ele_nodes(n));
+                end
+                % Those who were, are stored in ele_surface_nodes
+                ele_surface_nodes = sort(find(ele_surface_nodes));
+                ele_surface = [];
+                % Check which surfaces contain ele_surface_nodes
+                for s = 1:size(surfaces,2)
+                    if all(ele_surface_nodes == surfaces(s,:))
+                        ele_surface = [ele_surface s];
+                    end
+                end
+                ele_surfaces{e} = ele_surface;
+            end
         end
         %% Dependent Properties
         function out = get.n_nodes(mesh)

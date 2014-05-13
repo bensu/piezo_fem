@@ -1,5 +1,6 @@
 classdef Element
     properties
+        id
         type
         coords
         normals
@@ -10,12 +11,13 @@ classdef Element
         v3
     end
     methods
-        function obj = Element(type,coords,normals,t_in)
+        function obj = Element(id,type,coords,normals,t_in)
         % function obj = Element(type,coords,normals,t_in)
 %             require(size(coords,1)==4, ...
 %                 'ArgumentError: only 4 nodes');
 %             require(size(coords)==size(normals), ...
 %                 'ArgumentError: coords and normals should have same size');
+            obj.id = id;
             obj.coords = coords;
             obj.thickness = t_in;
             obj.normals = normals;
@@ -78,6 +80,32 @@ classdef Element
         end
     end
     methods (Static)
+        function [surfaces, s_coord, s_values] = surfaces(ele_type)
+        % [surfaces, s_directions, s_values] = surfaces(ele_type)
+        % Returns the nodes in each surface for the element type
+        % Each element has 4 surfaces, each one has an id (1 through 4)
+        % Each surface has either 1 or 3 nodes depending on the element.
+        % The surface can be defined by fixing one of the local
+        % coordinates, i.e. eta = 1 or ksi = -1.
+        % surfaces [4 x 3][Int]: each row has the nodes of the surface
+        % s_coord [4 x 1][Int]: each row has the local coordinate
+        % that remains fixed to represent that surface.
+        % s_values [4-6 x 1][Float]: the value of the coord that remains
+        % fixed, usually -1 or 1.
+            surfaces = [1 2 5; 
+                        2 3 6;
+                        3 4 7;
+                        1 4 8];
+            s_coord     = [2 1 2 1]';
+            s_values    = [-1 1 1 -1]';
+            switch (ele_type)
+                case {'Q4' 'AHMAD4'}
+                    nodes_per_surface = 2;
+                case {'Q8' 'Q9' 'AHMAD8' 'AHMAD9'}
+                    nodes_per_surface = 3;
+            end
+            surfaces = surfaces(:,1:nodes_per_surface);
+        end
         function cosines = direction_cosines(jac)
             % sistema de coordenadas local 123 en [ksi eta zeta]
             dir1 = jac(1,:);
