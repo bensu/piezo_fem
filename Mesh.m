@@ -85,8 +85,12 @@ classdef Mesh
             function L_out = aux_fun(element)
                 surfaces = ele_s{element.id == ele_ids};    % Element's surface #
                 L_out = [];
-                for s = 1:length(surfaces)
-                    L_out = [L_out; fun_in(element,s_coord(s),s_val(s))];
+                for s = surfaces
+                    if isempty(L_out)
+                        L_out = fun_in(element,s_coord(s),s_val(s));
+                    else
+                        L_out = L_out + fun_in(element,s_coord(s),s_val(s))
+                    end
                 end
             end
             ele_fun = @(element) aux_fun(element);
