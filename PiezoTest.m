@@ -27,7 +27,7 @@ classdef PiezoTest < matlab.unittest.TestCase
             
             %% MESH
            
-            mesh = Factory.ShellMesh('AHMAD4',[4,2],[a,b,t]);
+            mesh = Factory.ShellMesh('AHMAD4',[2,1],[a,b,t]);
             
             %% MATERIAL
             piezo_matrix = zeros(3,6);

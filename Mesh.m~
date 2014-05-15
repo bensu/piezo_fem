@@ -89,16 +89,16 @@ classdef Mesh
                     if isempty(L_out)
                         L_out = fun_in(element,s_coord(s),s_val(s));
                     else
-                        L_out = L_out + fun_in(element,s_coord(s),s_val(s));
+                        L_out = L_out + fun_in(element,s_coord(s),s_val(s))
                     end
                 end
             end
             ele_fun = @(element) aux_fun(element);
-            L = mesh.assembly_vector_along(dofs_per_node,dofs_per_ele, ...
-                                                        ele_ids,ele_fun);
+            L = mesh.assembly_vector_along(ele_ids,dofs_per_node, ...
+                                                    dofs_per_ele,ele_fun);
         end
-        function L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
-                                                            ele_ids,fun_in)
+        function L = assembly_vector_along(mesh,dofs_per_node, ...
+                                                    dofs_per_ele,ele_idsfun_in)
         % L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
         %                                    ele_ids,fun_in)
         % K [n_dofs x n_dofs]
@@ -186,6 +186,9 @@ classdef Mesh
         function out = n_dofs(mesh,dofs_per_node,dofs_per_ele)
             % out = n_dofs(mesh,dofs_per_node,dofs_per_ele)
             % Total number of DOFs
+            mesh.last_node_dof(dofs_per_node)
+            mesh.n_ele
+            dofs_per_ele
             out = mesh.last_node_dof(dofs_per_node) + ...
                     mesh.n_ele * dofs_per_ele;
         end
