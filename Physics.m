@@ -24,6 +24,7 @@ classdef Physics
             obj.m = m;            
         end
         function K = K_PiezoShell(element,material,order)
+        % K = K_PiezoShell(element,material,order)
         % K [ele_dof x ele_dof][Float] Stiffness as calculated in 
         % Cook 361 12.4-14
         % element [Element]: Requires methods jacobian and B

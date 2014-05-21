@@ -85,7 +85,7 @@ classdef Element
             N = zeros(3,5*element.n_nodes);
             I = eye(3);
             mu = element.mu_matrix;
-            t  = element.thickness;
+            t  = element.thickness
             N2 = element.N(ksi,eta);
             for n = 1:element.n_nodes
                 N(:,index_range(5,n)) = N2(n)*[I 0.5*t(n)*zeta*mu(:,:,n)];
