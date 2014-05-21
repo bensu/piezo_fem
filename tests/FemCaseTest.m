@@ -4,25 +4,28 @@ classdef FemCaseTest < matlab.unittest.TestCase
             %% PRELIMINARY ANALYSIS AND PARAMETERS 
             % Beam Theory analysis
             a = 2;          % X Side length [m]
-            b = 0.4;        % Y Side length [m]
+            b = 0.5;       % Y Side length [m]
             t = 0.1;        % Shell Thickness [m]
-            q = 1.5;        % Distributed Force [N/m2]
-            E = 2e7;          % Elasticity Modulus [Pa]
-            nu = 0.3;       % Poisson Coefficient
+            E = 2e7;        % Elasticity Modulus [Pa]
+            nu = 0;       % Poisson Coefficient
             rho = 1;        % Density [kg/m3]
             area = b*t;     % Area where Distributed Force is applied
             I = b*(t^3)/12; % Moment of Inertia of the loaded face
+            
+            % Load is a moment in the end
+            tau_z = 1.5;    % Distributed Force [N/m2]
+            M = area*tau_z;
             % Expected Displacemente along the x and y axis
-            % http://en.wikipedia.org/wiki/Deflection_%28engineering%29
-            %#End_loaded_cantilever_beams
-            expected_dz     = (q*area)*(a^3)/(3*E*I);
-            expected_phi    = -(q*area)*(a^2)/(2*E*I);
+            expected_dz     = M*(a^2)/(2*E*I);
+            expected_phi    = -M*(a)/(E*I);
             
             %% FEM and MESH
             % Elements along the side
-            m = 1;
+            dofs_per_node = 5;
+            dofs_per_ele = 0;
             n = 1;
-            mesh = Factory.ShellMesh('AHMAD4',[m,n],[a,b,t]);
+            m = 2*n;
+            mesh = Factory.ShellMesh('AHMAD8',[m,n],[a,b,t]);
             material = Material(E,nu,rho);
             K = @(element) Physics.K_Shell(element,material,3);
             physics = Physics(5,0,K);
@@ -38,27 +41,27 @@ classdef FemCaseTest < matlab.unittest.TestCase
             
             %% LOADS
             % Load the other side
-            % Valid only for AHMAD4
-            F = (q*area)/(n*2);   % Force at each node.
             x1_edge = (@(x,y,z) (abs(x-a) < tol));
-            border = mesh.find_nodes(x1_edge);
-            fem.loads.node_vals.set_val(border,[0,0,F,0,0]);
-            % Load consistently
-            x1_inner_edge = @(x,y,z) ((abs(x-a) < tol) && ...
-                                     ~(abs(y) < tol)   && ...
-                                     ~(abs(y-b) < tol));
-            inner_border = mesh.find_nodes(x1_inner_edge);
-            fem.loads.node_vals.set_val(inner_border,[0,0,2*F,0,0]);
+            border = find(mesh.find_nodes(x1_edge));
+            q = [0 0 0 0 -tau_z]';
+            load_fun = @(element,sc,sv) Physics.apply_surface_load( ...
+                                                        element,2,q,sc,sv);
+            L = mesh.integral_along_surface(dofs_per_node,dofs_per_ele, ...
+                                                        border,load_fun);
+            fem.loads.node_vals.dof_list_in(L);
             
             %% SOLVE
             fem.solve();    % SIDE EFFECTS
             
             %% TEST
             % Check if the obtained values are the expected ones
-            max_dis = max(fem.dis.all_dofs);
-            min_dis = min(fem.dis.all_dofs);
-%             testCase.verifyEqual(true,near(expected_dz,max_dis));
-%             testCase.verifyEqual(true,near(expected_phi,min_dis));
+            expected_dz
+            expected_phi
+            fem.dis.node_vals.vals;
+            max_dis = max(fem.dis.all_dofs)
+            min_dis = min(fem.dis.all_dofs)
+            testCase.verifyEqual(true,near(expected_dz,max_dis));
+            testCase.verifyEqual(true,near(expected_phi,min_dis));
             
 %             %% PLOT
 %             PlotMesh(mesh.coords + 1000*fem.dis.node_vals.vals(:,1:3), ...
@@ -80,13 +83,12 @@ classdef FemCaseTest < matlab.unittest.TestCase
             % Expected Displacemente along the x and y axis
             expected_dx = q*a/E;
             expected_dy = -nu*b*q/E;
-            
-            % Elements along the side
-            m = 2;
-            % With 
-            F = q*area/(m*2);   % Force at each node.
+            sigma = q;
 
             %% FEM and MESH
+            dofs_per_node = 5;
+            dofs_per_ele = 0;
+            m = 2;
             mesh = Factory.ShellMesh('Q4',[m,m],[a,b,t]);
             % Break the symmetry
             tol = 1e-5;
@@ -99,7 +101,7 @@ classdef FemCaseTest < matlab.unittest.TestCase
             material = Material(E,nu,rho);
             % Create the FemCase
             K = @(element) Physics.K_Shell(element,material,2);
-            physics = Physics(5,0,K);
+            physics = Physics(dofs_per_node,dofs_per_ele,K);
             fem = FemCase(mesh,physics);
             
             %% BC
@@ -112,16 +114,15 @@ classdef FemCaseTest < matlab.unittest.TestCase
             corner = mesh.find_nodes(x0_point);
             fem.bc.node_vals.set_val(corner,true(5,1));
             %% LOADS
-            % Load the other side
+            % Load the other side            
             x1_edge = (@(x,y,z) (abs(x-a) < tol));
-            border = mesh.find_nodes(x1_edge);
-            fem.loads.node_vals.set_val(border,[F,0,0,0,0]);
-            % Load consistently
-            x1_inner_edge = @(x,y,z) ((abs(x-a) < tol) && ...
-                                     ~(abs(y) < tol)   && ...
-                                     ~(abs(y-b) < tol));
-            inner_border = mesh.find_nodes(x1_inner_edge);
-            fem.loads.node_vals.set_val(inner_border,[2*F,0,0,0,0]);
+            border = find(mesh.find_nodes(x1_edge));
+            q = [sigma 0 0 0 0]';
+            load_fun = @(element,sc,sv) Physics.apply_surface_load( ...
+                element,2,q,sc,sv);
+            L = mesh.integral_along_surface(dofs_per_node,dofs_per_ele, ...
+                border,load_fun);
+            fem.loads.node_vals.dof_list_in(L);
             %% SOLUTION
             fem.solve();    % SIDE EFFECTS
             %% TEST

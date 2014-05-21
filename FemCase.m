@@ -41,7 +41,7 @@ classdef FemCase < handle
             % the stiffness matrix (S) are several orders of magnitude 
             % larger than others. It is desirable to improve cond(S) before
             % solving the system.
-            if (cond(S(F,F)) > 1e8)
+            if (condest(S(F,F)) > 1e8)
                 P = diag(sqrt(diag(S)));
                 inv_P = inv(P);
                 S_scaled = inv_P*S*inv_P;

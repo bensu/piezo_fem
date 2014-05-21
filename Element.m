@@ -38,14 +38,6 @@ classdef Element
             jac = [ dN*(element.coords + zeta*v3t/2);
                 N*(v3t)/2 ];
         end
-        function out = get.n_nodes(element)
-            % out = get.n_nodes(element)
-            % Number of nodes in the element
-            out = size(element.coords,1);
-        end
-        function out = get.v3(element)
-            out = squeeze(element.normals(:,3,:));
-        end
         function dN = dN(element,ksi,eta)
             require(isnumeric([ksi eta]), ...
                 'ArgumentError: Both ksi and eta should be numeric')
@@ -54,12 +46,12 @@ classdef Element
             require(-1<=eta && eta<=1, ...
                 'ArgumetnError: eta should be -1<=eta<=1')
             switch element.type
-                case {'Q9', 'AHMAD9'}
-                    dN = Element.dN_Q9(ksi,eta);
+                case {'Q4', 'AHMAD4'}
+                    dN = Element.dN_Q4(ksi,eta);
                 case {'Q8', 'AHMAD8'}
                     dN = Element.dN_Q8(ksi,eta);
-                case {'Q4', 'AHMAD4'}
-                    dN = Element.dN_Q4(ksi,eta);                    
+                case {'Q9', 'AHMAD9'}
+                    dN = Element.dN_Q9(ksi,eta);
             end
         end
         function N = N(element,ksi,eta)
@@ -77,6 +69,15 @@ classdef Element
                 case {'Q9','AHMAD9'}
                     N = Element.N_Q9(ksi,eta);
             end
+        end
+        %% Dependent properties
+       	function out = get.n_nodes(element)
+            % out = get.n_nodes(element)
+            % Number of nodes in the element
+            out = size(element.coords,1);
+        end
+        function out = get.v3(element)
+            out = squeeze(element.normals(:,3,:));
         end
     end
     methods (Static)
@@ -113,11 +114,11 @@ classdef Element
             dir2 = cross(dir3,dir1);
             cosines = [ dir1/norm(dir1); dir2/norm(dir2); dir3/norm(dir3)];
         end
-        function T = T(jac)
+        function T = T(cosines)
             % jac [3x3][Float]: Jacobian matrix
             % Transformation of Strain, Cook pg 212: 
             % Cook [7.3-5]
-            M1 = Element.direction_cosines(jac);
+            M1 = cosines;
             M2 = M1(:,[2 3 1]);
             M3 = M1([2 3 1],:);
             M4 = M2([2 3 1],:);
@@ -225,5 +226,6 @@ classdef Element
                 -ksi*eta*(ksi-1),               ...
                 2*(ksi-1)*(1+ksi)*eta ];
         end
+
     end
 end

@@ -50,7 +50,7 @@ classdef Physics
                 % Mechanics Part
                 B_mech = Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
                 % Join both and trasform the coordinates
-                B = blkdiag(Element.T(jac)*B_mech,cosines*dN_xyz);
+                B = blkdiag(Element.T(cosines)*B_mech,cosines*dN_xyz);
                 K_in_point = B'*C*B*det(jac);
             end
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
@@ -118,7 +118,8 @@ classdef Physics
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(ksi,eta,zeta)
                 jac = element.jacobian(ksi,eta,zeta);
-                B = Element.T(jac)* ...
+                cosines = Element.direction_cosines(jac);
+                B = Element.T(cosines)* ...
                     Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
                 K_in_point = B'*C*B*det(jac);
             end
@@ -135,7 +136,8 @@ classdef Physics
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(c_matrix,ksi,eta,zeta)
                 jac = element.jacobian(ksi,eta,zeta);
-                B = Element.T(jac)* ...
+                cosines = Element.direction_cosines(jac);
+                B = Element.T(cosines)* ...
                     Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
                 K_in_point = B'*c_matrix*B*det(jac);
             end

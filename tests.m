@@ -7,9 +7,9 @@ addpath('tests');
 % 
 % mesh_suite = MeshTest;
 % run(mesh_suite)
-% 
-% femcase_suite = FemCaseTest;
-% run(femcase_suite)
 
-piezo_suite = PiezoTest;
-run(piezo_suite)
+femcase_suite = FemCaseTest;
+run(femcase_suite)
+% 
+% piezo_suite = PiezoTest;
+% run(piezo_suite)
