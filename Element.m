@@ -70,6 +70,27 @@ classdef Element
                     N = Element.N_Q9(ksi,eta);
             end
         end
+        function mu = mu_matrix(element)
+        % mu = mu_matrix(cosines)
+        % [mu] [3x2xn_nodes][Float] as defined in Cook 12.5-3
+            V = element.normals;
+            V(:,3,:) = [];
+            V = V(:,[2 1],:);
+            V(:,1,:) = -V(:,1,:);
+            mu = V;
+        end
+        function N = ShellN(element,ksi,eta,zeta)
+        % N = N3(element,ksi,eta,zeta)
+        % Shell proper shape functions
+            N = zeros(3,5*element.n_nodes);
+            I = eye(3);
+            mu = element.mu_matrix;
+            t  = element.thickness;
+            N2 = element.N(ksi,eta);
+            for n = 1:element.n_nodes
+                N(:,index_range(5,n)) = N2(n)*[I 0.5*t(n)*zeta*mu(:,:,n)];
+            end
+        end
         %% Dependent properties
        	function out = get.n_nodes(element)
             % out = get.n_nodes(element)
@@ -108,7 +129,7 @@ classdef Element
             surfaces = surfaces(:,1:nodes_per_surface);
         end
         function cosines = direction_cosines(jac)
-            % sistema de coordenadas local 123 en [ksi eta zeta]
+            % local coordinate system [ksi eta zeta]
             dir1 = jac(1,:);
             dir3 = cross(dir1,jac(2,:));
             dir2 = cross(dir3,dir1);

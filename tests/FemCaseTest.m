@@ -55,11 +55,11 @@ classdef FemCaseTest < matlab.unittest.TestCase
             
             %% TEST
             % Check if the obtained values are the expected ones
-            expected_dz
-            expected_phi
             fem.dis.node_vals.vals;
-            max_dis = max(fem.dis.all_dofs)
-            min_dis = min(fem.dis.all_dofs)
+            expected_dz;
+            expected_phi;
+            max_dis = max(fem.dis.all_dofs);
+            min_dis = min(fem.dis.all_dofs);
             testCase.verifyEqual(true,near(expected_dz,max_dis));
             testCase.verifyEqual(true,near(expected_phi,min_dis));
             

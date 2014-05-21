@@ -3,6 +3,7 @@ classdef Physics
         dofs_per_node
         dofs_per_ele
         k
+        m
     end
     methods
         function obj = Physics(dofs_per_node,dofs_per_ele,fun_in)
@@ -16,6 +17,12 @@ classdef Physics
         end
     end
     methods (Static)
+        function obj = Dynamic(dofs_per_node,dofs_per_ele,k,m)
+            require(isa(m,'function_handle'), ...
+                'ArgumentError: m should be a function handle');
+            obj = Physics(dofs_per_node,dofs_per_ele,k);
+            obj.m = m;            
+        end
         function K = K_PiezoShell(element,material,order)
         % K [ele_dof x ele_dof][Float] Stiffness as calculated in 
         % Cook 361 12.4-14
@@ -110,10 +117,26 @@ classdef Physics
                 ksi,eta,zeta));
             L = Integral.Volume3D(fun_in,order,[-1 1]);
         end
+        function M = M_Shell(element,material,order)
+        % M = M_Shell(element,material,order)
+        % M [n_dofxn_dof][Float] Mass as calculated in Cook 361 13.2-5
+        % element [Element]: Requires methods jacobian and B
+        % material[Material]: Requires property rho
+        % order [Int]: Gauss integration order
+            rho = material.rho;
+            function M_in_point = M_in_point(ksi,eta,zeta)
+                jac = element.jacobian(ksi,eta,zeta);
+                N = element.ShellN(ksi,eta,zeta);
+                M_in_point = rho*(N')*N*det(jac);
+            end
+            fun_in = @(xi,eta,mu) (M_in_point(xi,eta,mu));
+            M = Integral.Volume3D(fun_in,order,[-1 1]);
+        end
         function K = K_Shell(element,material,order)
+        % K = K_Shell(element,material,order)
         % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
         % element [Element]: Requires methods jacobian and B
-        % material[Material]: Requires methods E and nu
+        % material[Material]: Requires properties E and nu
         % order [Int]: Gauss integration order
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(ksi,eta,zeta)
@@ -127,6 +150,7 @@ classdef Physics
             K = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function K = K_Shell_selective(element,material,normal_order,shear_order)
+        % K = K_Shell_selective(element,material,normal_order,shear_order)
         % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
         % with selective integration
         % element [Element]: Requires methods jacobian and B

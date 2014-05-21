@@ -25,6 +25,30 @@ classdef FemCase < handle
             obj.reactions = CompoundFunction(0,mesh_in.n_nodes, ...
             	physics_in.dofs_per_node,mesh_in.n_ele,physics_in.dofs_per_ele);
         end
+        function S = S(fem)
+        % S = S(fem)
+        % Wrapper for Stiffness Matrix
+            S = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
+                fem.physics.dofs_per_ele,  ...
+                fem.physics.k);
+        end
+        function M = M(fem)
+        % M = M(fem)
+        % Wrapper for Mass Matrix
+            M = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
+                fem.physics.dofs_per_ele,  ...
+                fem.physics.m);
+        end
+        function [V,D] = eigen_values(fem)
+        % Solves the eigen value problem for K and M.
+            require(~isempty(fem.physics.m), ...
+                'Error: physics needs a mass matrix');
+            F = ~fem.bc.all_dofs;
+            S = fem.S;
+            M = fem.M;
+            [V,D] = eigs(M(F,F),S(F,F));
+            
+        end
         function solve(fem)
             % Side Effects
             % Solves the problem set by physics.k and the mesh.
