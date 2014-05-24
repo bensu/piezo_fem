@@ -39,9 +39,10 @@ classdef PiezoTest < matlab.unittest.TestCase
             K = @(element) Physics.K_PiezoShell(element,material,2);
             physics = Physics(dofs_per_node,dofs_per_ele,K);
             fem = FemCase(mesh,physics);
-            tol = 1e-9;
+            
             %% BC
             % Clamped since there is no poisson effect
+            tol = 1e-9;
             x0_edge = (@(x,y,z) (abs(x) < tol));
             base = mesh.find_nodes(x0_edge);
             fem.bc.node_vals.set_val(base,true);     
