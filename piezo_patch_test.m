@@ -34,7 +34,7 @@ x = C \ S;
 % Solution decomposition
 expected_u = x(1)*a;
 expected_v = x(2)*b;
-expected_V = x(3)*t;
+expected_V = x(3)*t/2;
 
 %% Patch Test
 
@@ -79,11 +79,9 @@ fem.solve();
 
 u_max = max(fem.dis.node_vals.vals(:,1));
 v_min = min(fem.dis.node_vals.vals(:,2));
-V = fem.dis.ele_vals.vals(1,1);
+V = fem.dis.ele_vals.vals(1,1)
 
 %% Compare
 
-expected_u - u_max
-expected_v - v_min
 expected_V - V
   

@@ -11,7 +11,7 @@ nu = 0;     % Poisson Coefficient
 rho = 1;	% Density [kg/m3]
 
 % Expected Mass
-m = a*b*t*rho   % [kg]
+m = a*b*t*rho;   % [kg]
 
 %% FEM and MESH
 % Elements along the side

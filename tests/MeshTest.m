@@ -12,15 +12,15 @@ classdef MeshTest < matlab.unittest.TestCase
             % Nodes 4 and 6 should not have any coupling
             dofs_4 = index_range(dofs_per_node,4);
             dofs_6 = index_range(dofs_per_node,6);
-            testCase.verifyEqual(zeros(dofs_per_node),S(dofs_4,dofs_6));
+            testCase.verifyEqual(zeros(dofs_per_node),full(S(dofs_4,dofs_6)));
             % Nodes 1 and 3 should not have any coupling
             dofs_1 = index_range(dofs_per_node,1);
             dofs_3 = index_range(dofs_per_node,3);
-            testCase.verifyEqual(zeros(dofs_per_node),S(dofs_1,dofs_3));
+            testCase.verifyEqual(zeros(dofs_per_node),full(S(dofs_1,dofs_3)));
             % Nodes 1 and 4 should be coupled
-            testCase.verifyEqual(true,any(any(S(dofs_1,dofs_4))));
+            testCase.verifyTrue(any(any(S(dofs_1,dofs_4))));
             % Nodes 3 and 6 should be coupled
-            testCase.verifyEqual(true,any(any(S(dofs_3,dofs_6))));
+            testCase.verifyTrue(any(any(S(dofs_3,dofs_6))));
         end
         function AssemblyBasicTest(testCase)
             % Tests the assembly function using only one element
