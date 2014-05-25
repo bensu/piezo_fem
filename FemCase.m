@@ -46,7 +46,7 @@ classdef FemCase < handle
             F = ~fem.bc.all_dofs;
             S = fem.S;
             M = fem.M;
-            [V,D] = eigs(M(F,F),S(F,F));
+            [V,D] = eigs(S(F,F),M(F,F),3,'SM');
             
         end
         function solve(fem)
@@ -72,10 +72,13 @@ classdef FemCase < handle
                 L_scaled = inv_P*L;
                 D_scaled = S_scaled(F,F) \ L_scaled(F);
                 D(F) = inv_P(F,F)*D_scaled;
-%                 cond(S(F,F))
-%                 cond(S_scaled(F,F))
-%                 size(S_scaled(F,F))
-%                 rank(S_scaled(F,F))
+                % Change to true if output is wanted
+                if (false)
+                    cond(S(F,F))
+                    cond(S_scaled(F,F))
+                    size(S_scaled(F,F))
+                    rank(S_scaled(F,F))
+                end
             else
                 D(F) = S(F,F) \ L(F);
             end
@@ -86,6 +89,20 @@ classdef FemCase < handle
             fem.reactions.node_vals.vals(edge,3);
             sum(abs(fem.reactions.node_vals.vals));
             sum(fem.loads.node_vals.vals);
+        end
+        function plot(fem)
+            if ~isempty(fem.dis) && ~isempty(fem.reactions)
+                fem.mesh.plot_displacements(100,fem.dis.node_vals.vals(:,1:3))
+                hold on
+                fem.mesh.plot_vector_field( ...
+                    fem.reactions.node_vals.vals(:,1:3),'k');
+            else
+                hold on
+                fem.mesh.plot
+            end
+            fem.mesh.plot_vector_field(fem.bc.node_vals.vals(:,1:3),'b')
+            fem.mesh.plot_vector_field(fem.loads.node_vals.vals(:,1:3),'r')
+            hold off
         end
     end
 end

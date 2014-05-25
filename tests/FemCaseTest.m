@@ -63,11 +63,7 @@ classdef FemCaseTest < matlab.unittest.TestCase
             testCase.verifyEqual(true,near(expected_dz,max_dis));
             testCase.verifyEqual(true,near(expected_phi,min_dis));
             
-%             %% PLOT
-%             PlotMesh(mesh.coords + 1000*fem.dis.node_vals.vals(:,1:3), ...
-%                 mesh.connect, ...
-%                 ~fem.bc.node_vals.vals, ...
-%                             fem.reactions.node_vals.vals);
+
         end
         function PatchTest(testCase)
             %% PRELIMINARY ANALYSIS AND PARAMETERS 

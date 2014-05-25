@@ -223,10 +223,10 @@ classdef Mesh
             end
         end
         function ele_ids = unique_eles(mesh,node_ids)
-        % ele_ids = unique_elements(mesh,node_ids)
-        % node_id [n_nodes x 1][Int]: Ids of the nodes.
-        % ele_ids [? x 1][Int]: Ids of the elements that contain those nodes. 
-            node_eles = mesh.node_eles(node_ids);    
+            % ele_ids = unique_elements(mesh,node_ids)
+            % node_id [n_nodes x 1][Int]: Ids of the nodes.
+            % ele_ids [? x 1][Int]: Ids of the elements that contain those nodes.
+            node_eles = mesh.node_eles(node_ids);
             ele_ids = [];
             for n = 1:length(node_eles)
                 ele_ids = [ele_ids node_eles{n}];
@@ -234,10 +234,10 @@ classdef Mesh
             ele_ids = unique(ele_ids);
         end
         function ele_surfaces = ele_surfaces(mesh,nodes,ele_ids)
-        % ele_surfaces = ele_surfaces(mesh,nodes,ele_ids)
-        % ele_surfaces {n_ele_ids x 1}[Int] the surfaces (between 1
-        % and 6) of each element that contain the nodes.
-        % nodes: [n x 1][Int] node_ids of the nodes in the global surface
+            % ele_surfaces = ele_surfaces(mesh,nodes,ele_ids)
+            % ele_surfaces {n_ele_ids x 1}[Int] the surfaces (between 1
+            % and 6) of each element that contain the nodes.
+            % nodes: [n x 1][Int] node_ids of the nodes in the global surface
             n_ele = length(ele_ids);    % Number of elements
             ele_surfaces = cell(n_ele,1);
             % surfaces contains data from the element type
@@ -263,6 +263,54 @@ classdef Mesh
                 end
                 ele_surfaces{e} = ele_surface;
             end
+        end
+        %% Plotting
+        function plot(mesh)
+            % Nodes per element (to be plotted)
+            nodes_per_ele = 4;  % HARDCODED FOR RECTANGULAR SHELL ELEMENTS                              
+            % Initialization of the required matrices
+            X = zeros(nodes_per_ele,mesh.n_ele); 
+            Y = zeros(nodes_per_ele,mesh.n_ele); 
+            Z = zeros(nodes_per_ele,mesh.n_ele);
+            for e = 1:mesh.n_ele
+                e_nodes = mesh.ele_nodes(e);    % nodes for ele with id = e
+                for n = 1:nodes_per_ele
+                    X(n,e) = mesh.coords(e_nodes(n),1);    % extract x value of the node
+                    Y(n,e) = mesh.coords(e_nodes(n),2);    % extract y value of the node
+                    Z(n,e) = mesh.coords(e_nodes(n),3);
+                end
+            end
+            
+            % Plotting the FEM mesh, diaplay Node numbers and Element numbers
+            f1 = figure ;
+            set(f1,'name','Mesh','numbertitle','off') ;
+            patch(X,Y,Z,'w');
+            hold on
+            e_nodes = mesh.connect(:,1:end)';
+            for n = 1:mesh.n_ele
+                text(X(:,n),Y(:,n),Z(:,n),int2str(e_nodes(1:4,n)), ...
+                                                'fontsize',8,'color','k');
+                text(sum(X(:,n))/4,sum(Y(:,n))/4,sum(Z(:,n))/4,int2str(n), ...
+                                                'fontsize',10,'color','r') ;
+            end
+            hold off
+        end
+        function plot_displacements(mesh,scale,displacements)
+            % plot_displacements(mesh,scale,displacements)
+            % displacements [n_nodes x 3]
+            % scale [Float]: the bigger scale, the bigger displacements look
+            aux_mesh = mesh;
+            aux_mesh.coords = mesh.coords + scale*displacements;
+            aux_mesh.plot();
+        end
+        function plot_vector_field(mesh,vector_field,options)
+            % plot_vector_field(mesh,vector_field,option)  
+            % Wrapper for quiver3
+            % vector_field [n_nodes x 3][Float]
+            % options: MATLAB plotting options, i.e. 'k-'
+            quiver3(mesh.coords(:,1),mesh.coords(:,2),mesh.coords(:,3), ...
+            	vector_field(:,1),vector_field(:,2),vector_field(:,3), ...
+                options);
         end
         %% Dependent Properties
         function out = get.n_nodes(mesh)
