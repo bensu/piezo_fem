@@ -24,12 +24,12 @@ classdef Physics
             obj.m = m;            
         end
         function K = K_PiezoShell(element,material,order)
-        % K = K_PiezoShell(element,material,order)
-        % K [ele_dof x ele_dof][Float] Stiffness as calculated in 
-        % Cook 361 12.4-14
-        % element [Element]: Requires methods jacobian and B
-        % material[Material]: Requires methods E, nu, and D
-        % order [Int]: Gauss integration order
+            % K = K_PiezoShell(element,material,order)
+            % K [ele_dof x ele_dof][Float] Stiffness as calculated in
+            % Cook 361 12.4-14
+            % element [Element]: Requires methods jacobian and B
+            % material[Material]: Requires methods E, nu, and D
+            % order [Int]: Gauss integration order
             % Constitutive Relationship
             % Both material properties skip 3rd col because it is a plain
             % stress problem
@@ -46,7 +46,7 @@ classdef Physics
                 cosines = Element.direction_cosines(jac);
                 inv_jac = jac \ eye(3);
                 dof_per_ele = 1;
-                if (dof_per_ele == 2)
+                if dof_per_ele == 2
                     dN_ele = zeros(3,2);
                     % V_bottom is first, V_top goes second.
                     % Together they form E_z = V_top - V_bottom
@@ -65,15 +65,15 @@ classdef Physics
             K = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function L = apply_surface_load(element,order,q,s_coord,s_val)
-        % L = apply_load(element,order,q)
-        % Generates a load dof vector by integrating a constant load along
-        % an element's surface.
-        % L [n_ele_dofs x 1][Float]: Load vector
-        % element [Element]
-        % order [Int]: Gauss integration order
-        % q [dof x 1][Float]: Constant applied load
-        % s_coord [Int]: coordinate that defines the surface
-        % s_val [Float]: value that the coordinate takes, i.e. ksi = -1;
+            % L = apply_load(element,order,q)
+            % Generates a load dof vector by integrating a constant load along
+            % an element's surface.
+            % L [n_ele_dofs x 1][Float]: Load vector
+            % element [Element]
+            % order [Int]: Gauss integration order
+            % q [dof x 1][Float]: Constant applied load
+            % s_coord [Int]: coordinate that defines the surface, if ksi,2
+            % s_val [Float]: value that the coordinate takes, i.e. ksi = -1;
             function L = apply_point_load(element,q,s_coord,ksi,eta,zeta)
                 % L = apply_point_load(element,q,ksi,eta,zeta)
                 % Used as lambda in apply_surface_load and apply_volume_load
@@ -88,26 +88,26 @@ classdef Physics
                 case 1
                     ksi = s_val;
                     fun_in = @(eta,zeta) (apply_point_load( ...
-                                            element,q,s_coord,ksi,eta,zeta));
+                                        element,q,s_coord,ksi,eta,zeta));
                 case 2
                     eta = s_val;
                     fun_in = @(ksi,zeta) (apply_point_load( ...
-                                            element,q,s_coord,ksi,eta,zeta));
+                                        element,q,s_coord,ksi,eta,zeta));
                 case 3
                     zeta = s_val;
                     fun_in = @(ksi,eta) (apply_point_load( ...
-                                            element,q,s_coord,ksi,eta,zeta));
+                                        element,q,s_coord,ksi,eta,zeta));
             end
             L = Integral.Surface2D(fun_in,order,[-1 1]);
         end
         function L = apply_volume_load(element,order,q)
-        % L = apply_load(element,order,q)
-        % Generates a load dof vector by integrating a constant load along
-        % the element.
-        % L [n_ele_dofs x 1][Float]: Load vector
-        % element [Element]
-        % order [Int]: Gauss integration order
-        % q [dof x 1][Float]: Constant applied load
+            % L = apply_load(element,order,q)
+            % Generates a load dof vector by integrating a constant load along
+            % the element.
+            % L [n_ele_dofs x 1][Float]: Load vector
+            % element [Element]
+            % order [Int]: Gauss integration order
+            % q [dof x 1][Float]: Constant applied load
             function L = apply_point_load(element,q,ksi,eta,zeta)
                 % L = apply_point_load(element,q,ksi,eta,zeta)
                 % Used as lambda in apply_surface_load and apply_volume_load
@@ -119,11 +119,11 @@ classdef Physics
             L = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function M = M_Shell(element,material,order)
-        % M = M_Shell(element,material,order)
-        % M [n_dofxn_dof][Float] Mass as calculated in Cook 361 13.2-5
-        % element [Element]: Requires methods jacobian and B
-        % material[Material]: Requires property rho
-        % order [Int]: Gauss integration order
+            % M = M_Shell(element,material,order)
+            % M [n_dofxn_dof][Float] Mass as calculated in Cook 361 13.2-5
+            % element [Element]: Requires methods jacobian and B
+            % material[Material]: Requires property rho
+            % order [Int]: Gauss integration order
             rho = material.rho;
             function M_in_point = M_in_point(ksi,eta,zeta)
                 jac = element.jacobian(ksi,eta,zeta);
@@ -134,11 +134,11 @@ classdef Physics
             M = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function K = K_Shell(element,material,order)
-        % K = K_Shell(element,material,order)
-        % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
-        % element [Element]: Requires methods jacobian and B
-        % material[Material]: Requires properties E and nu
-        % order [Int]: Gauss integration order
+            % K = K_Shell(element,material,order)
+            % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
+            % element [Element]: Requires methods jacobian and B
+            % material[Material]: Requires properties E and nu
+            % order [Int]: Gauss integration order
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(ksi,eta,zeta)
                 jac = element.jacobian(ksi,eta,zeta);
@@ -151,13 +151,13 @@ classdef Physics
             K = Integral.Volume3D(fun_in,order,[-1 1]);
         end
         function K = K_Shell_selective(element,material,normal_order,shear_order)
-        % K = K_Shell_selective(element,material,normal_order,shear_order)
-        % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
-        % with selective integration
-        % element [Element]: Requires methods jacobian and B
-        % material[Material]: Requires methods E and nu
-        % normal_order [Int]: Gauss integration order for normal part
-        % shear_order  [Int]: Gauss integration order for shear part
+            % K = K_Shell_selective(element,material,normal_order,shear_order)
+            % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
+            % with selective integration
+            % element [Element]: Requires methods jacobian and B
+            % material[Material]: Requires methods E and nu
+            % normal_order [Int]: Gauss integration order for normal part
+            % shear_order  [Int]: Gauss integration order for shear part
             C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(c_matrix,ksi,eta,zeta)
                 jac = element.jacobian(ksi,eta,zeta);

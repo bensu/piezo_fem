@@ -1,4 +1,11 @@
 classdef FemCase < handle
+    % FemCase Class
+    % Works a the collection of data structures that represent a FEM
+    % problem. It includes a mesh, the physical problem, it's boundary
+    % conditions and the results.
+    % Main Methods:
+    %   - solve
+    %   - eigen_values
     properties
         mesh
         physics

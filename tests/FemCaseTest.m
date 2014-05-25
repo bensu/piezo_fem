@@ -1,6 +1,8 @@
 classdef FemCaseTest < matlab.unittest.TestCase
+    % FemCaseTest - Unit Test for FemCase class
     methods (Test)
         function BeamTest(testCase)
+            % Tests if the shells can accurately model a beam.
             %% PRELIMINARY ANALYSIS AND PARAMETERS 
             % Beam Theory analysis
             a = 2;          % X Side length [m]
@@ -66,6 +68,7 @@ classdef FemCaseTest < matlab.unittest.TestCase
 
         end
         function PatchTest(testCase)
+            % Basic patch test for in plane element stability
             %% PRELIMINARY ANALYSIS AND PARAMETERS 
             % In-plane patch test for one element
             a = 0.3;        % X Side length [m]

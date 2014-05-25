@@ -1,4 +1,11 @@
 classdef Mesh
+    % Mesh Class
+    % Works as a wrapper for the node coordinate matrix (coords) and the
+    % element connectivity matrix (connect). Provides a series of helper
+    % methods to assemble functions along the mesh.
+    % Its main methods are assemble_matrix and assemble_vector.
+    % Currently contains specific shell methods  and properties such as 
+    % nodal_system and normals.
     properties
         coords
         connect
@@ -32,6 +39,7 @@ classdef Mesh
             obj.thickness = thickness_in;
         end
         function nodal_systems = nodal_systems(mesh)
+            % Shell specific
             ksi = [ -1  1  1 -1  0  1  0 -1  0 ];
             eta = [ -1 -1  1  1 -1  0  1  0  0 ];
             tol = 1e-9;
@@ -313,17 +321,17 @@ classdef Mesh
         end
         %% Dependent Properties
         function out = get.n_nodes(mesh)
-        % out = n_nodes(mesh)
-        % Number of Nodes
+            % out = n_nodes(mesh)
+            % Number of Nodes
             out = size(mesh.coords,1);
         end
         function out = get.n_ele(mesh)
-        % out = n_nodes(mesh)
-        % Number of Elements
+            % out = n_nodes(mesh)
+            % Number of Elements
             out = size(mesh.connect,1);
         end
         function out = get.nodes_per_ele(mesh)
-        % out = nodes_per_ele(mesh)
+            % out = nodes_per_ele(mesh)
             out = size(mesh.connect,2);
         end
     end

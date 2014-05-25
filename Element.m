@@ -1,18 +1,23 @@
 classdef Element
+    % Element Class
+    % Works as a general data structure for an element. In principle, it
+    % should not contain methods specific to a certain element type, but
+    % raher the general ones.
     properties
-        id
-        type
-        coords
-        normals
-        thickness
+        id          % [Int]: Unique id number sed by the mesh to represent the ele.
+        type        % [EleType]: Contains all the specific functions.
+        coords      % [n_nodes x 3][Float]: Node coordinates, in order
+        normals     % [n_nodes x 3][Float]: Node coordinate system - Shell only
+        thickness   % [n_nodes x 1][Float]: Thickness at each node - Shell only
     end
     properties (Dependent)
-        n_nodes
-        v3
+        n_nodes     % [Int]: Number of nodes
+        v3          % [3 x n_nodes]: Vector perpendicular to the shell at nodes - Shell only
     end
     methods
         function obj = Element(id,type,coords,normals,t_in)
         % function obj = Element(type,coords,normals,t_in)
+        % Creates an element object
 %             require(size(coords,1)==4, ...
 %                 'ArgumentError: only 4 nodes');
 %             require(size(coords)==size(normals), ...
@@ -38,23 +43,10 @@ classdef Element
             jac = [ dN*(element.coords + zeta*v3t/2);
                 N*(v3t)/2 ];
         end
-        function dN = dN(element,ksi,eta)
-            require(isnumeric([ksi eta]), ...
-                'ArgumentError: Both ksi and eta should be numeric')
-            require(-1<=ksi && ksi<=1, ...
-                'ArgumetnError: ksi should be -1<=ksi<=1')
-            require(-1<=eta && eta<=1, ...
-                'ArgumetnError: eta should be -1<=eta<=1')
-            switch element.type
-                case {'Q4', 'AHMAD4'}
-                    dN = Element.dN_Q4(ksi,eta);
-                case {'Q8', 'AHMAD8'}
-                    dN = Element.dN_Q8(ksi,eta);
-                case {'Q9', 'AHMAD9'}
-                    dN = Element.dN_Q9(ksi,eta);
-            end
-        end
         function N = N(element,ksi,eta)
+            % N = N(element,ksi,eta)
+            % Element Shape Functions
+            % Works by fetching them from EleType
             require(isnumeric([ksi eta]), ...
                 'ArgumentError: Both ksi and eta should be numeric')
             require(-1<=ksi && ksi<=1, ...
@@ -70,9 +62,29 @@ classdef Element
                     N = Element.N_Q9(ksi,eta);
             end
         end
+        function dN = dN(element,ksi,eta)
+            % N = dN(element,ksi,eta)
+            % Element Shape Functions Derivatives
+            % Works by fetching them from EleType
+            require(isnumeric([ksi eta]), ...
+                'ArgumentError: Both ksi and eta should be numeric')
+            require(-1<=ksi && ksi<=1, ...
+                'ArgumetnError: ksi should be -1<=ksi<=1')
+            require(-1<=eta && eta<=1, ...
+                'ArgumetnError: eta should be -1<=eta<=1')
+            switch element.type
+                case {'Q4', 'AHMAD4'}
+                    dN = Element.dN_Q4(ksi,eta);
+                case {'Q8', 'AHMAD8'}
+                    dN = Element.dN_Q8(ksi,eta);
+                case {'Q9', 'AHMAD9'}
+                    dN = Element.dN_Q9(ksi,eta);
+            end
+        end
         function mu = mu_matrix(element)
-        % mu = mu_matrix(cosines)
-        % [mu] [3x2xn_nodes][Float] as defined in Cook 12.5-3
+            % mu = mu_matrix(cosines)
+            % [mu] [3x2xn_nodes][Float] as defined in Cook 12.5-3
+            % Specific Shell
             V = element.normals;
             V(:,3,:) = [];
             V = V(:,[2 1],:);
@@ -80,8 +92,9 @@ classdef Element
             mu = V;
         end
         function N = ShellN(element,ksi,eta,zeta)
-        % N = N3(element,ksi,eta,zeta)
-        % Shell proper shape functions
+            % N = N3(element,ksi,eta,zeta)
+            % Shell proper shape functions
+            % Specific Shell
             N = zeros(3,5*element.n_nodes);
             I = eye(3);
             mu = element.mu_matrix;
@@ -163,6 +176,10 @@ classdef Element
             end
         end
         function N = N_Q4(ksi,eta)
+            % N = N_Q4(ksi,eta)
+            % N [1 x 4][Float]: Shape Functions for Q4 element
+            % Follows anti-clockwise node-numbering convention:
+            % (ksi,eta) = [(-1,-1), (1,-1), (1,1), (-1,1)]
             N4 = 0.25*(1 - ksi)*(1 + eta);
             N3 = 0.25*(1 + ksi)*(1 + eta);
             N2 = 0.25*(1 + ksi)*(1 - eta);
@@ -170,18 +187,27 @@ classdef Element
             N = [N1 N2 N3 N4];
         end
         function dN = dN_Q4(ksi,eta)
-            dN = [  % dN ksi
+            % dN = dN_Q4(ksi,eta)
+            % dN [2 x 4][Float]: Shape functions derivatives
+            % dN = [dN_dksi; dN_deta];
+            % Follows same numbering convention as N_Q4
+            dN = [  % dN_ksi
             -0.25*(1 - eta),    ...
             0.25*(1 - eta),     ...
             0.25*(1 + eta),     ...
             -0.25*(1 + eta)
-            % dN deta
+            % dN_deta
             -0.25*(1 - ksi),    ...
             -0.25*(1 + ksi),    ...
             0.25*(1 + ksi),     ...
             0.25*(1 - ksi) ];
         end
         function N = N_Q8(ksi,eta)
+            % N = N_Q8(ksi,eta)
+            % N [1 x 8][Float]: Shape Functions for Q8 element
+            % Follows anti-clockwise node-numbering convention:
+            % (ksi,eta) = [(-1,-1), (1,-1), (1,1), (-1,1) ...
+            %               (0,-1), (1,0),  (0,1), (-1,0)]
             N8 = 0.50*(1 - ksi  )*(1 - eta^2);
             N7 = 0.50*(1 - ksi^2)*(1 + eta  );
             N6 = 0.50*(1 + ksi  )*(1 - eta^2);
@@ -194,7 +220,11 @@ classdef Element
             
         end
         function dN = dN_Q8(ksi,eta)
-            dN = [  % dN ksi
+            % dN = dN_Q8(ksi,eta)
+            % dN [2 x 8][Float]: Shape functions derivatives
+            % dN = [dN_dksi; dN_deta];
+            % Follows same numbering convention as N_Q8
+            dN = [  % dN_ksi
             -0.25*(-1+eta)*(eta+2*ksi),     ...
             -0.25*(-1+eta)*(-eta+2*ksi),    ...
             0.25*(1+eta)*(eta+2*ksi),       ...
@@ -203,7 +233,7 @@ classdef Element
             -0.5*(-1+eta)*(1+eta),          ...
             -ksi*(1+eta),                   ...
             0.5*(-1+eta)*(1+eta);
-            % dN deta
+            % dN_deta
             -0.25*(-1+ksi)*(ksi+2*eta),     ...
             -0.25*(1+ksi)*(ksi-2*eta),      ...
             0.25*(1+ksi)*(ksi+2*eta),       ...
@@ -214,6 +244,11 @@ classdef Element
             (-1+ksi)*eta ];
         end
         function N = N_Q9(ksi,eta)
+            % N = N_Q9(ksi,eta)
+            % N [1 x 9][Float]: Shape Functions for Q9 element
+            % Follows anti-clockwise node-numbering convention:
+            % (ksi,eta) = [(-1,-1), (1,-1), (1,1), (-1,1) ...
+            %               (0,-1), (1,0),  (0,1), (-1,0), (0,0)]
             N9 =      (1 - ksi^2)*(1 - eta^2);
             N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
             N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
@@ -226,7 +261,11 @@ classdef Element
             N  = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
         end
         function dN = dN_Q9(ksi,eta)
-            dN = [   % dN ksi
+            % dN = dN_Q9(ksi,eta)
+            % dN [2 x 9][Float]: Shape functions derivatives
+            % dN = [dN_dksi; dN_deta];
+            % Follows same numbering convention as N_Q9
+            dN = [   % dN_ksi
                 0.25*eta*(-1+eta)*(2*ksi-1),    ...
                 0.25*eta*(-1+eta)*(2*ksi+1),    ...
                 0.25*eta*(1+eta)*(2*ksi+1),     ...
@@ -236,7 +275,7 @@ classdef Element
                 -ksi*eta*(1+eta),               ...
                 -1/2*(-1+eta)*(1+eta)*(2*ksi-1),...
                 2*ksi*(-1+eta)*(1+eta);
-                % dN eta
+                % dN_eta
                 0.25*ksi*(-1+2*eta)*(ksi-1),    ...
                 0.25*ksi*(-1+2*eta)*(1+ksi),    ...
                 0.25*ksi*(2*eta+1)*(1+ksi),     ...

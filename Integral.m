@@ -1,4 +1,9 @@
 classdef Integral
+    % Integral Class
+    % Works as a library not as a data structure.
+    % Main methods:
+    %   - Surface2D
+    %   - Volume3D
     methods (Static)
         function [w, gp, n] = gauss(ng)
             % [w, gp, n] = gauss(ng)

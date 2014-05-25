@@ -1,4 +1,8 @@
 classdef Material
+    % class Material
+    % Data structure holding material constants.
+    % Has Static Creator methods for each type of material.
+    % Has no methods that include physics.
     properties
         E           % Elastic Modulus [Pa]
         nu          % Poisson coefficient

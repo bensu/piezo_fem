@@ -51,7 +51,14 @@ fem.loads.node_vals.dof_list_in(L);
 %% Static Solution
 
 fem.solve();
-[max_dz, position] = max(fem.dis.node_vals.vals(:,3));
+[max_dz, max_node] = max(fem.dis.node_vals.vals(:,3));
+
+%% Dynamic Solution
+
+[V,D] = fem.eigen_values(3);
+
+V
+D
 
 %% Damping
 n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
@@ -64,27 +71,33 @@ S = fem.S; S = S(F,F);
 C = sparse(eye(n_dofs));
 C = C(F,F);
 
+
+
 %% Force
 
-steps = 1000;
-dt = 0.01;
-D = zeros(size(S,1),steps);
+% steps = 1000000;
+% dt = a*sqrt(rho/E)/1000;   % /N added for safety.
+% D = zeros(size(S,1),steps+1);
+% 
+% M2 = M/(dt^2);
+% C2 = C/(2*dt);
+% MC = M2 + C2;
+% 
+% for n = 2:steps
+%     D(:,n+1) = MC \ (R -S*D(:,n) + M2*(2*D(:,n)-D(:,n-1)) + C2*D(:,n-1));
+% end
 
-M2 = M/(dt^2);
-C2 = C/(2*dt);
-MC = M2 + C2;
-
-for n = 2:steps
-    aux = MC \ (-S*D(:,n) + M2*(2*D(:,n)-D(:,n-1)) + C2*D(:,n-1));
-    D(:,n) = R + aux;
-end
-
-%% 
-
-t = linspace(0,dt*steps,steps);
-hold on
-plot(t,D(position*dofs_per_node+3,:))
-plot(t,max_dz)
-hold off
+%% Compare final value
+% 
+% max_dz
+% max(D(:,end))
+% 
+% %% 
+% 
+% t = linspace(0,dt*steps,steps+1);
+% hold on
+% plot(t,D((max_node+1)*dofs_per_node+3,:))
+% % plot(t,max_dz)
+% hold off
 
 
