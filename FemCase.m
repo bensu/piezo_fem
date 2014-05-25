@@ -16,14 +16,11 @@ classdef FemCase < handle
             obj.mesh = mesh_in;
             obj.physics = physics_in;
             % Create the rest of the Properties
-            obj.bc = CompoundFunction(false,mesh_in.n_nodes, ...
-            	physics_in.dofs_per_node,mesh_in.n_ele,physics_in.dofs_per_ele);
-            obj.loads = CompoundFunction(0,mesh_in.n_nodes, ...
-            	physics_in.dofs_per_node,mesh_in.n_ele,physics_in.dofs_per_ele);
-            obj.dis = CompoundFunction(0,mesh_in.n_nodes, ...
-            	physics_in.dofs_per_node,mesh_in.n_ele,physics_in.dofs_per_ele);
-            obj.reactions = CompoundFunction(0,mesh_in.n_nodes, ...
-            	physics_in.dofs_per_node,mesh_in.n_ele,physics_in.dofs_per_ele);
+            
+            obj.bc = obj.compound_function(false);
+            obj.loads = obj.compound_function(0);
+            obj.dis = obj.compound_function(0);
+            obj.reactions = obj.compound_function(0);
         end
         function S = S(fem)
         % S = S(fem)
@@ -39,15 +36,22 @@ classdef FemCase < handle
                 fem.physics.dofs_per_ele,  ...
                 fem.physics.m);
         end
-        function [V,D] = eigen_values(fem)
-        % Solves the eigen value problem for K and M.
+        function [V,D] = eigen_values(fem,mode_number)
+            % [V,D] = eigen_values(fem,mode_number)
+            % Solves the eigen value problem for K and M.
+            % V [n_dof x n_dof][Float]: Mode Shape Matrix
+            % D [n_dof x n_dof][Float]: Diagonal matrix with omega^2
+            % mode_number [Int]: Number of modes to be calculated
             require(~isempty(fem.physics.m), ...
                 'Error: physics needs a mass matrix');
             F = ~fem.bc.all_dofs;
             S = fem.S;
             M = fem.M;
-            [V,D] = eigs(S(F,F),M(F,F),3,'SM');
-            
+            [V1,D] = eigs(S(F,F),M(F,F),mode_number,'SM');
+            V = fem.compound_function(0);
+            aux = V.all_dofs;
+            aux(F) = V1(:,3);
+            V.dof_list_in(aux);
         end
         function solve(fem)
             % Side Effects
@@ -89,6 +93,11 @@ classdef FemCase < handle
             fem.reactions.node_vals.vals(edge,3);
             sum(abs(fem.reactions.node_vals.vals));
             sum(fem.loads.node_vals.vals);
+        end
+        function obj = compound_function(fem,filler)
+            % Wrapper for class CompoundFunction
+            obj = CompoundFunction(filler,fem.mesh.n_nodes, ...
+            	fem.physics.dofs_per_node,fem.mesh.n_ele,fem.physics.dofs_per_ele);
         end
         function plot(fem)
             if ~isempty(fem.dis) && ~isempty(fem.reactions)
