@@ -23,7 +23,7 @@ expected_f = (lambda.^2)*c/(2*pi);
 % Elements along the side
 dofs_per_node = 5;
 dofs_per_ele = 0;
-mesh = Factory.ShellMesh('AHMAD8',[3,6],[a,b,t]);
+mesh = Factory.ShellMesh('AHMAD8',[10,5],[a,b,t]);
 material = Material(E,nu,rho);
 M = @(element) Physics.M_Shell(element,material,3);
 K = @(element) Physics.K_Shell(element,material,3);
@@ -39,8 +39,8 @@ fem.bc.node_vals.set_val(base,true);
 
 %% LOADS
 % Load the other side
-x1_edge = (@(x,y,z) (abs(x-a) < tol));
-border = find(mesh.find_nodes(x1_edge));
+f_border = (@(x,y,z) (abs(x-a) < tol));
+border = find(mesh.find_nodes(f_border));
 q = [0 0 F 0 0]';
 load_fun = @(element,sc,sv) Physics.apply_surface_load( ...
     element,2,q,sc,sv);
@@ -48,30 +48,56 @@ L = mesh.integral_along_surface(dofs_per_node,dofs_per_ele, ...
     border,load_fun);
 fem.loads.node_vals.dof_list_in(L);
 
-%% Static Solution
-
-fem.solve();
-[max_dz, max_node] = max(fem.dis.node_vals.vals(:,3));
-
-%% Dynamic Solution
-
-[V,D] = fem.eigen_values(3);
-
-V
-D
-
-%% Damping
-n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
+%% Condensation
+% Master dofs are the same ones that have loads!
 
 F = ~fem.bc.all_dofs;
-R = fem.loads.all_dofs;
-R = R(F);
-M = fem.M; M = M(F,F);
-S = fem.S; S = S(F,F);
-C = sparse(eye(n_dofs));
-C = C(F,F);
+S = fem.S;
+M = fem.M;
 
+%% 
+f_edge = (@(x,y,z) ((abs(y-b) < tol)||(abs(y)<tol)));
+edge = find(mesh.find_nodes(f_edge));
+m_dofs = mesh.master_node_dofs(dofs_per_node,union(edge,border),3);
+s_dofs = mesh.slave_dofs(dofs_per_node,dofs_per_ele,m_dofs);
 
+Fm = F(m_dofs);
+Fs = F(s_dofs);
+aux = -(S(Fs,Fs) \ S(Fs,Fm));
+T = [eye(size(aux,2)); aux];
+size(T)
+
+Kr = T'*S(F,F)*T;
+Mr = T'*M(F,F)*T;
+
+[V, D] = eigs(Kr,Mr);
+
+f = sqrt(diag(D))/(2*pi)
+
+%% Static Solution
+
+% fem.solve();
+% [max_dz, max_node] = max(fem.dis.node_vals.vals(:,3));
+
+% %% Dynamic Solution
+% 
+% [V,D] = fem.eigen_values(3);
+% 
+% V
+% D
+% 
+% %% Damping
+% n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
+% 
+% 
+% R = fem.loads.all_dofs;
+% R = R(F);
+%  M = M(F,F);
+% 
+% C = sparse(eye(n_dofs));
+% C = C(F,F);
+% 
+% 
 
 %% Force
 

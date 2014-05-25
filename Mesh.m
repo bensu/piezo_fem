@@ -83,10 +83,10 @@ classdef Mesh
             end
         end
         function L = integral_along_surface(mesh,dofs_per_node, ...
-                                        dofs_per_ele,s_nodes,fun_in)
-        % L = integral_along_surface(mesh,s_nodes,fun_in)
-        % s_nodes [n x 1]: nodes in the surface
-        % fun_in [FHandle](element,surface_c,surface_value)
+                dofs_per_ele,s_nodes,fun_in)
+            % L = integral_along_surface(mesh,s_nodes,fun_in)
+            % s_nodes [n x 1]: nodes in the surface
+            % fun_in [FHandle](element,surface_c,surface_value)
             ele_ids = mesh.unique_eles(s_nodes);
             ele_s = mesh.ele_surfaces(s_nodes,ele_ids);
             [~, s_coord, s_val] = Element.surfaces(mesh.ele_type);
@@ -106,14 +106,14 @@ classdef Mesh
                                                         ele_ids,ele_fun);
         end
         function L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
-                                                            ele_ids,fun_in)
-        % L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
-        %                                    ele_ids,fun_in)
-        % K [n_dofs x n_dofs]
-        % dofs_per_node [Int]
-        % dofs_per_ele [Int]
-        % fun_in [Fhandle] f(element) -> [dofs_per_ele x 1]
-        % fun_in follows convention [node_dofs ele_dofs]
+                ele_ids,fun_in)
+            % L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
+            %                                    ele_ids,fun_in)
+            % K [n_dofs x n_dofs]
+            % dofs_per_node [Int]
+            % dofs_per_ele [Int]
+            % fun_in [Fhandle] f(element) -> [dofs_per_ele x 1]
+            % fun_in follows convention [node_dofs ele_dofs]
             require(all(~mod([dofs_per_node,dofs_per_ele],1)), ...
                 'ArgumentError: dofs should be integers');
             mesh.n_dofs(dofs_per_node,dofs_per_ele)
@@ -126,12 +126,12 @@ classdef Mesh
             end
         end
         function L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
-        % L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
-        % L [n_dofs x 1]
-        % dofs_per_node [Int]
-        % dofs_per_ele [Int]
-        % fun_in [Fhandle] f(element) -> [dofs_per_ele x 1]
-        % fun_in follows convention [node_dofs ele_dofs]
+            % L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
+            % L [n_dofs x 1]
+            % dofs_per_node [Int]
+            % dofs_per_ele [Int]
+            % fun_in [Fhandle] f(element) -> [dofs_per_ele x 1]
+            % fun_in follows convention [node_dofs ele_dofs]
             L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
                                                     1:mesh.n_ele,fun_in);
         end
@@ -166,6 +166,69 @@ classdef Mesh
             end
         end
         %% DOF helpers
+        function s_dofs = slave_dofs(mesh,dofs_per_node,dofs_per_ele,master_dofs)
+            % s_dofs = slave_dofs(mesh,master_dofs)
+            % Returns all the dofs that are not master_dofs
+            all_dofs = (1:mesh.n_dofs(dofs_per_node,dofs_per_ele))';
+            s_dofs = setdiff(all_dofs,master_dofs);
+        end
+        function dofs = master_ele_dofs(mesh,dofs_per_node,dofs_per_ele, ...
+                                                        ele_ids,dofs_type)
+            % dofs = master_ele_dofs(mesh,dofs_per_node,dofs_per_ele, ...
+            %                        ele_ids,dofs_type)
+            % dofs [Int]: Master Dof ids
+            % dofs_per_node [Int]
+            % dofs_per_ele [Int]
+            % ele_ids: [E x 1][Int]: Vector containing the element ids
+            %   accordint to the mesh.
+            % dofs_type [e_types x 1][Int]: Vector containg the type of
+            %   dofs that are neede
+            % Finds the dofs corresponding to the elements in ele_ids, and
+            % then filters out by dof_types
+            require(all(dofs_type <= dofs_per_ele), ...
+                'ArgumentError: all values in dofs_type should be smaller than dofs_per_ele');
+            require(all(dofs_type == unique(dofs_type)), ...
+                'ArgumentError: dofs_type should have unique values');
+            E = lenght(ele_ids);                % Number of elements to consider
+            e_types = length(ele_dofs_type);    % Number of dofs_per_ele to consider
+            dofs = zeros(E*e_types,1);
+            l = mesh.last_node_dof(dofs_per_node);
+            % Loop through the selected elements
+            for e = 1:E
+                % Find all the element's dofs
+                all_ele_dofs = l + index_range(dofs_per_ele,ele_ids(e));
+                % Keep only the interesting ones, specified by dofs_type
+                dofs(index_range(e_types,e)) = all_ele_dofs(dofs_type);
+            end
+        end
+        function dofs = master_node_dofs(mesh,dofs_per_node,node_ids, ...
+                                                        dofs_type)
+            % dofs = master_node_dofs(mesh,dofs_per_node,dofs_per_ele,node_ids,dof_type)
+            % Finds the dofs corresponding to the nodes in node_ids, and
+            % then filters out the dof_types
+            % dofs [Int]: Master Dof ids
+            % dofs_per_node [Int]
+            % node_ids: [N x 1][Int]: Vector containing the node ids
+            %   accordint to the mesh.
+            % dofs_type [n_types x 1][Int]: Vector containg the type of
+            %   dofs that are neede
+            % Finds the dofs corresponding to the nodes in node_ids, and
+            % then filters out by dof_types
+            require(all(dofs_type <= dofs_per_node), ...
+                'ArgumentError: all values in dofs_type should be smaller than dofs_per_ele');
+            require(all(dofs_type == unique(dofs_type)), ...
+                'ArgumentError: dofs_type should have unique values');
+            N = length(node_ids);           % Number of nodes to consider
+            n_types = length(dofs_type);    % Number of dofs_per_node to consider
+            dofs = zeros(N*n_types,1);      
+            % Loop through selected nodes
+            for n = 1:N
+                % Find all the node's dofs
+                all_node_dofs = index_range(dofs_per_node,node_ids(n));
+                % Keep only the interesting ones, specified by dofs_type
+                dofs(index_range(n_types,n)) = all_node_dofs(dofs_type);
+            end
+        end
         function dofs = all_eles_dofs(mesh,dofs_per_node,dofs_per_ele,ele_id)
             % eles_dofs(mesh,dofs_per_node,dofs_per_ele,ele_id)
             % Computes the complete Dof list for a certain element
@@ -196,7 +259,7 @@ classdef Mesh
             % out = n_dofs(mesh,dofs_per_node,dofs_per_ele)
             % Total number of DOFs
             out = mesh.last_node_dof(dofs_per_node) + ...
-                    mesh.n_ele * dofs_per_ele;
+                mesh.n_ele * dofs_per_ele;
         end
         function out = last_node_dof(mesh,dofs_per_node)
             % out = last_node_dof(mesh,dofs_per_node)
@@ -204,24 +267,24 @@ classdef Mesh
         end
         %% Element Helpers
         function ele = ele(mesh,ele_id)
-        % ele = ele(mesh,ele_id)
-        % ele [Element]
-        % Create element with ID ele_id from the mesh
+            % ele = ele(mesh,ele_id)
+            % ele [Element]
+            % Create element with ID ele_id from the mesh
             nodes = mesh.ele_nodes(ele_id);
             ele = Element(ele_id,mesh.ele_type,mesh.coords(nodes,:), ...
-                        mesh.normals(:,:,nodes),mesh.thickness(nodes));
+                mesh.normals(:,:,nodes),mesh.thickness(nodes));
         end
         function node_ids = ele_nodes(mesh,ele_id)
-        % nodes_ids = ele_nodes(mesh,ele_id)
-        % nodes_ids [1xnodes_per_element]
-        % Returns all the IDs corresponding to ele_id
+            % nodes_ids = ele_nodes(mesh,ele_id)
+            % nodes_ids [1xnodes_per_element]
+            % Returns all the IDs corresponding to ele_id
             node_ids = mesh.connect(ele_id,:);
         end
         function ele_ids = node_eles(mesh,node_id)
-        % ele_ids = node_eles(mesh,node_id)
-        % node_id [n_nodes x 1][Int]: Ids of the nodes.
-        % ele_ids {n_nodes x 1}[Int]: Ids of the elements that contain
-        % those nodes.
+            % ele_ids = node_eles(mesh,node_id)
+            % node_id [n_nodes x 1][Int]: Ids of the nodes.
+            % ele_ids {n_nodes x 1}[Int]: Ids of the elements that contain
+            % those nodes.
             % A cell array is used because each node might return a
             % different number of elements
             n_nodes = length(node_id);
@@ -283,9 +346,9 @@ classdef Mesh
             for e = 1:mesh.n_ele
                 e_nodes = mesh.ele_nodes(e);    % nodes for ele with id = e
                 for n = 1:nodes_per_ele
-                    X(n,e) = mesh.coords(e_nodes(n),1);    % extract x value of the node
-                    Y(n,e) = mesh.coords(e_nodes(n),2);    % extract y value of the node
-                    Z(n,e) = mesh.coords(e_nodes(n),3);
+                    X(n,e) = mesh.coords(e_nodes(n),1); % extract x value of the node
+                    Y(n,e) = mesh.coords(e_nodes(n),2); % extract y value of the node
+                    Z(n,e) = mesh.coords(e_nodes(n),3); % extract z value of the node
                 end
             end
             % Plotting the FEM mesh, diaplay Node numbers and Element numbers
