@@ -1,4 +1,10 @@
 classdef Factory
+    % Factory
+    % Use to generate common cases for tests, for example meshes and
+    % elements that can be later used.It can provide parameters and memory 
+    % environments when needed.
+    % In principle, all methods should be static, since the class works as a
+    % library and not as a memory structure.
     methods (Static)
         function mesh = ShellMesh(type,n_elements,sides)
             % mesh = ShellMesh(n_elements,sides)

@@ -280,7 +280,6 @@ classdef Mesh
                     Z(n,e) = mesh.coords(e_nodes(n),3);
                 end
             end
-            
             % Plotting the FEM mesh, diaplay Node numbers and Element numbers
             f1 = figure ;
             set(f1,'name','Mesh','numbertitle','off') ;

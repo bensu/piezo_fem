@@ -2,6 +2,8 @@ clc
 clear all
 addpath('tests');
 
+%% Should commit new tests to the list after they are passing locally
+
 ele_suite = ElementTest;
 run(ele_suite)
 
