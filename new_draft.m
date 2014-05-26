@@ -68,27 +68,26 @@ end
 
 %% Modal Decomposition
 
-dt = 1e-5;   % /N added for safety.
-
+dt = 5e-3;   % /N added for safety.
 R = fem.loads.all_dofs;
-C = sparse(eye(n_dofs));
+C = sparse(eye(n_dofs)/10000);
 
 
-S2 = diag(V'*S(F,F)*V)
-C2 = diag(V'*C(F,F)*V)./(2*dt);
+S2 = diag(V'*S(F,F)*V);
+C2 = diag(V'*C(F,F)*V)/(2*dt);
 R2 = V'*R(F);
 
 %% Time integration 
 
-steps = 3000000;
+steps = 300;
 Z = zeros(size(V,2),steps+1);
 
 K2T = S2 - 2/(dt^2);
-MC1 = 1/(1/(dt^2) + C2);
-MC2 = 1/(dt^2) - C2;
+MC1 = 1./(dt^-2 + C2);
+MC2 = dt^-2 - C2;
 
 for n = 2:steps
-    Z(:,n+1) = MC1*(R2 - K2T.*Z(:,n) - MC2.*Z(:,n-1));
+    Z(:,n+1) = MC1.*(R2 - K2T.*Z(:,n) - MC2.*Z(:,n-1));
 end
 t = linspace(0,dt*steps,steps+1);
 
