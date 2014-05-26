@@ -29,20 +29,6 @@ classdef FemCase < handle
             obj.dis = obj.compound_function(0);
             obj.reactions = obj.compound_function(0);
         end
-        function S = S(fem)
-        % S = S(fem)
-        % Wrapper for Stiffness Matrix
-            S = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
-                fem.physics.dofs_per_ele,  ...
-                fem.physics.k);
-        end
-        function M = M(fem)
-        % M = M(fem)
-        % Wrapper for Mass Matrix
-            M = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
-                fem.physics.dofs_per_ele,  ...
-                fem.physics.m);
-        end
         function [V,D] = eigen_values(fem,mode_number)
             % [V,D] = eigen_values(fem,mode_number)
             % Solves the eigen value problem for K and M.
@@ -100,6 +86,21 @@ classdef FemCase < handle
             fem.reactions.node_vals.vals(edge,3);
             sum(abs(fem.reactions.node_vals.vals));
             sum(fem.loads.node_vals.vals);
+        end
+        %% Wrappers
+        function S = S(fem)
+        % S = S(fem)
+        % Wrapper for Stiffness Matrix
+            S = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
+                fem.physics.dofs_per_ele,  ...
+                fem.physics.k);
+        end
+        function M = M(fem)
+        % M = M(fem)
+        % Wrapper for Mass Matrix
+            M = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
+                fem.physics.dofs_per_ele,  ...
+                fem.physics.m);
         end
         function obj = compound_function(fem,filler)
             % Wrapper for class CompoundFunction

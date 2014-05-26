@@ -23,7 +23,8 @@ expected_f = (lambda.^2)*c/(2*pi);
 % Elements along the side
 dofs_per_node = 5;
 dofs_per_ele = 0;
-mesh = Factory.ShellMesh('AHMAD8',[10,5],[a,b,t]);
+n = 5;
+mesh = Factory.ShellMesh('AHMAD8',[10,n],[a,b,t]);
 material = Material(E,nu,rho);
 M = @(element) Physics.M_Shell(element,material,3);
 K = @(element) Physics.K_Shell(element,material,3);
@@ -48,31 +49,84 @@ L = mesh.integral_along_surface(dofs_per_node,dofs_per_ele, ...
     border,load_fun);
 fem.loads.node_vals.dof_list_in(L);
 
-%% Condensation
-% Master dofs are the same ones that have loads!
+%% Assembly
 
 F = ~fem.bc.all_dofs;
 S = fem.S;
 M = fem.M;
 
-%% 
-f_edge = (@(x,y,z) ((abs(y-b) < tol)||(abs(y)<tol)));
-edge = find(mesh.find_nodes(f_edge));
-m_dofs = mesh.master_node_dofs(dofs_per_node,union(edge,border),3);
-s_dofs = mesh.slave_dofs(dofs_per_node,dofs_per_ele,m_dofs);
+%% EigenValues
 
-Fm = F(m_dofs);
-Fs = F(s_dofs);
-aux = -(S(Fs,Fs) \ S(Fs,Fm));
-T = [eye(size(aux,2)); aux];
-size(T)
+n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
 
-Kr = T'*S(F,F)*T;
-Mr = T'*M(F,F)*T;
+[V,D] = eigs(S(F,F),M(F,F),3,'SM');
+M2 = diag(V'*M(F,F)*V);
 
-[V, D] = eigs(Kr,Mr);
+for i = 1:size(V,2)
+    V(:,i) = V(:,i) / (norm(V(:,i))*sqrt(M2(i)));
+end
 
-f = sqrt(diag(D))/(2*pi)
+%% Modal Decomposition
+
+dt = 1e-5;   % /N added for safety.
+
+R = fem.loads.all_dofs;
+C = sparse(eye(n_dofs));
+
+
+S2 = diag(V'*S(F,F)*V)
+C2 = diag(V'*C(F,F)*V)./(2*dt);
+R2 = V'*R(F);
+
+%% Time integration 
+
+steps = 3000000;
+Z = zeros(size(V,2),steps+1);
+
+K2T = S2 - 2/(dt^2);
+MC1 = 1/(1/(dt^2) + C2);
+MC2 = 1/(dt^2) - C2;
+
+for n = 2:steps
+    Z(:,n+1) = MC1*(R2 - K2T.*Z(:,n) - MC2.*Z(:,n-1));
+end
+t = linspace(0,dt*steps,steps+1);
+
+%% Rebuild D, final value
+
+D = fem.compound_function(0);
+aux = D.all_dofs;
+aux(F) = V*(Z(:,end));
+D.dof_list_in(aux);
+
+[dz, dz_node] = max(D.node_vals.vals(:,3))
+
+%% Static Solution
+
+fem.solve();
+[max_dz, max_node] = max(fem.dis.node_vals.vals(:,3))
+
+
+%% Condensation
+% Master dofs are the same ones that have loads!
+% f_edge = (@(x,y,z) ((abs(y-b) < tol)||(abs(y)<tol)||(abs(y-2*b/n)<tol)));
+% f_edge = (@(x,y,z) true);
+% edge = find(mesh.find_nodes(f_edge));
+% m_dofs = mesh.master_node_dofs(dofs_per_node,union(edge,border),1:5);
+% s_dofs = mesh.slave_dofs(dofs_per_node,dofs_per_ele,m_dofs);
+% 
+% Fm = F(m_dofs);
+% Fs = F(s_dofs);
+% aux = -(S(Fs,Fs) \ S(Fs,Fm));
+% T = [eye(size(aux,2)); aux];
+% size(T)
+% 
+% Kr = T'*S(F,F)*T;
+% Mr = T'*M(F,F)*T;
+% 
+% [V, D] = eigs(Kr,Mr,3,'SM');
+% 
+% f = sqrt(diag(D))/(2*pi)
 
 %% Static Solution
 
@@ -85,33 +139,6 @@ f = sqrt(diag(D))/(2*pi)
 % 
 % V
 % D
-% 
-% %% Damping
-% n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
-% 
-% 
-% R = fem.loads.all_dofs;
-% R = R(F);
-%  M = M(F,F);
-% 
-% C = sparse(eye(n_dofs));
-% C = C(F,F);
-% 
-% 
-
-%% Force
-
-% steps = 1000000;
-% dt = a*sqrt(rho/E)/1000;   % /N added for safety.
-% D = zeros(size(S,1),steps+1);
-% 
-% M2 = M/(dt^2);
-% C2 = C/(2*dt);
-% MC = M2 + C2;
-% 
-% for n = 2:steps
-%     D(:,n+1) = MC \ (R -S*D(:,n) + M2*(2*D(:,n)-D(:,n-1)) + C2*D(:,n-1));
-% end
 
 %% Compare final value
 % 
