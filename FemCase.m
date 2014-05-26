@@ -99,7 +99,7 @@ classdef FemCase < handle
         % M = M(fem)
         % Wrapper for Mass Matrix
             M = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
-                fem.physics.dofs_per_ele,  ...
+                0,  ... %% HARDCODED for mechanical vibration
                 fem.physics.m);
         end
         function obj = compound_function(fem,filler)
