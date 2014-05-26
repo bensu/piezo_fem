@@ -23,8 +23,8 @@ expected_f = (lambda.^2)*c/(2*pi);
 % Elements along the side
 dofs_per_node = 5;
 dofs_per_ele = 0;
-n = 5;
-mesh = Factory.ShellMesh('AHMAD8',[10,n],[a,b,t]);
+n = 6;
+mesh = Factory.ShellMesh('AHMAD8',[2*n,n],[a,b,t]);
 material = Material(E,nu,rho);
 M = @(element) Physics.M_Shell(element,material,3);
 K = @(element) Physics.K_Shell(element,material,3);
@@ -98,13 +98,17 @@ aux = D.all_dofs;
 aux(F) = V*(Z(:,end));
 D.dof_list_in(aux);
 
-[dz, dz_node] = max(D.node_vals.vals(:,3))
+[dz, dz_node] = max(D.node_vals.vals(:,3));
 
 %% Static Solution
 
 fem.solve();
-[max_dz, max_node] = max(fem.dis.node_vals.vals(:,3))
+[max_dz, max_node] = max(fem.dis.node_vals.vals(:,3));
 
+%% Compare
+
+error = abs((dz - max_dz)/max_dz);
+100*error < 1
 
 %% Condensation
 % Master dofs are the same ones that have loads!
