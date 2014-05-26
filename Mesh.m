@@ -189,8 +189,10 @@ classdef Mesh
                 'ArgumentError: all values in dofs_type should be smaller than dofs_per_ele');
             require(all(dofs_type == unique(dofs_type)), ...
                 'ArgumentError: dofs_type should have unique values');
-            E = lenght(ele_ids);                % Number of elements to consider
-            e_types = length(ele_dofs_type);    % Number of dofs_per_ele to consider
+            require(dofs_per_ele > 0, ...
+                'ArgumentError: dof_per_ele should be greater than zero');
+            E = length(ele_ids);                % Number of elements to consider
+            e_types = length(dofs_type);    % Number of dofs_per_ele to consider
             dofs = zeros(E*e_types,1);
             l = mesh.last_node_dof(dofs_per_node);
             % Loop through the selected elements
@@ -218,6 +220,8 @@ classdef Mesh
                 'ArgumentError: all values in dofs_type should be smaller than dofs_per_ele');
             require(all(dofs_type == unique(dofs_type)), ...
                 'ArgumentError: dofs_type should have unique values');
+            require(dofs_per_node > 0, ...
+                'ArgumentError: dof_per_ele should be greater than zero');
             N = length(node_ids);           % Number of nodes to consider
             n_types = length(dofs_type);    % Number of dofs_per_node to consider
             dofs = zeros(N*n_types,1);      
