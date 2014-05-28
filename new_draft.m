@@ -104,6 +104,8 @@ B = [ zeros(size(P));   P]
 rank(ctrb(A,B))
 
 %% Time integration
+
+f = @(z) (
 tt = 0:dt:(steps*dt);
 for n = 2:steps
     Z(:,n+1) = MC1.*(R2 - K2T.*Z(:,n) - MC2.*Z(:,n-1));
