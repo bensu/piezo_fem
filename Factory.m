@@ -6,6 +6,15 @@ classdef Factory
     % In principle, all methods should be static, since the class works as a
     % library and not as a memory structure.
     methods (Static)
+        function mesh = BrickMesh(type,n_elements,sides)
+            % mesh = BrickMesh(type,n_elements,sides)
+            % mesh [Mesh]: New Generated mesh
+            % sides = [a,b,c] [1x3][Float]: sides of the shell 
+            % n_elements = [m,n,o] [1x2]3Int]: num of elements in each edge
+            [coords, connect] = Factory.Box(n_elements,sides);
+            thickness = sides(3)*ones(1,size(coords,1));
+            mesh = Mesh(type,coords,connect,thickness);       
+        end
         function mesh = ShellMesh(type,n_elements,sides)
             % mesh = ShellMesh(n_elements,sides)
             % mesh [Mesh]: New Generated mesh

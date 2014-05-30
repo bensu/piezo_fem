@@ -17,6 +17,17 @@ classdef Physics
         end
     end
     methods (Static)
+         function B = B_H8(element,ksi,eta,zeta)
+            AUX = zeros(6,9);
+            AUX([1 10 18 22 26 35 42 47 51]) = 1;
+            Tinv = inv(element.jacobian(ksi,eta,zeta));
+            Ndevsparse = EleType.dN_sparse(ksi,eta,zeta);
+            AUX2 = zeros(9);
+            for i = 1:3
+                AUX2((1+(i-1)*3:3*i),(1+(i-1)*3:3*i)) = Tinv;
+            end
+            B = AUX*AUX2*Ndevsparse;
+        end
         function obj = Dynamic(dofs_per_node,dofs_per_ele,k,m)
             require(isa(m,'function_handle'), ...
                 'ArgumentError: m should be a function handle');

@@ -16,12 +16,12 @@ classdef Element
     end
     methods
         function obj = Element(id,type,coords,normals,t_in)
-        % function obj = Element(type,coords,normals,t_in)
-        % Creates an element object
-%             require(size(coords,1)==4, ...
-%                 'ArgumentError: only 4 nodes');
-%             require(size(coords)==size(normals), ...
-%                 'ArgumentError: coords and normals should have same size');
+            % function obj = Element(type,coords,normals,t_in)
+            % Creates an element object
+            %             require(size(coords,1)==4, ...
+            %                 'ArgumentError: only 4 nodes');
+            %             require(size(coords)==size(normals), ...
+            %                 'ArgumentError: coords and normals should have same size');
             obj.id = id;
             obj.coords = coords;
             obj.thickness = t_in;
@@ -36,14 +36,13 @@ classdef Element
             % Cook [6.7-2] gives Isoparametric Jacobian
             % Cook [12.5-4] & [12.5-2] gives Shells Derivatives.
             switch element.type
-                case {'AHMAD4','AHMAD8','AHMAD9'}
-                    jac = element.ShellJac(ksi,eta,zeta);                                       
-                case {'Q4','Q8','Q9'}
+                case {EleType.AHMAD4, EleType.AHMAD8, EleType.AHMAD9}
+                    jac = element.ShellJac(ksi,eta,zeta);
+                case {EleType.Q4,EleType.Q8,EleType.Q9}
                     jac = element.Jac2D(ksi,eta);
-                case {'H8'}
+                case {EleType.H8}
                     jac = element.Jac3D(ksi,eta,zeta);
             end
-
         end
         function jac = ShellJac(element,ksi,eta,zeta)
             N  = element.N(ksi,eta,zeta);
@@ -57,6 +56,9 @@ classdef Element
         function jac = Jac2D(element,ksi,eta)
             jac = element.dN(ksi,eta,0)*element.coords;
         end
+        function jac = Jac3D(element,ksi,eta,zeta)
+            jac = element.dN(ksi,eta,zeta)*element.coords;
+        end
         function N = N(element,ksi,eta,zeta)
             % N = N(element,ksi,eta)
             % Element Shape Functions
@@ -68,13 +70,13 @@ classdef Element
             require(-1<=eta && eta<=1, ...
                 'ArgumetnError: eta should be -1<=eta<=1')
             switch element.type
-                case {'Q4', 'AHMAD4'}
+                case {EleType.Q4, EleType.AHMAD4}
                     N = Element.N_Q4(ksi,eta);                                       
-                case {'Q8','AHMAD8'}
+                case {EleType.Q8,EleType.AHMAD8}
                     N = Element.N_Q8(ksi,eta);
-                case {'Q9','AHMAD9'}
+                case {EleType.Q9,EleType.AHMAD9}
                     N = Element.N_Q9(ksi,eta);
-                case {'H8'}
+                case {EleType.H8}
                     N = Element.N_H8(ksi,eta,zeta);
             end
         end
@@ -91,14 +93,14 @@ classdef Element
             require(-1<=zeta && zeta<=1, ...
                 'ArgumetnError: eta should be -1<=eta<=1')
             switch element.type
-                case {'Q4', 'AHMAD4'}
+                case {EleType.Q4, EleType.AHMAD4}
                     dN = Element.dN_Q4(ksi,eta);
-                case {'Q8', 'AHMAD8'}
+                case {EleType.Q8,EleType.AHMAD8}
                     dN = Element.dN_Q8(ksi,eta);
-                case {'Q9', 'AHMAD9'}
+                case {EleType.Q9,EleType.AHMAD9}
                     dN = Element.dN_Q9(ksi,eta);
-                case {'H8'}
-                    dN = Element.dN_H8(ksi,eta,zeta);
+                case {EleType.H8}
+                    dN = EleType.dN_H8(ksi,eta,zeta);
             end
         end
         function mu = mu_matrix(element)

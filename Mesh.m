@@ -35,7 +35,9 @@ classdef Mesh
             obj.ele_type = ele_type;
             obj.coords = coords;
             obj.connect = connect;
-            obj.normals = obj.nodal_systems();
+            if EleType.is_shell(ele_type)
+                obj.normals = obj.nodal_systems();
+            end
             obj.thickness = thickness_in;
         end
         function nodal_systems = nodal_systems(mesh)
@@ -283,8 +285,13 @@ classdef Mesh
             % ele [Element]
             % Create element with ID ele_id from the mesh
             nodes = mesh.ele_nodes(ele_id);
-            ele = Element(ele_id,mesh.ele_type,mesh.coords(nodes,:), ...
-                mesh.normals(:,:,nodes),mesh.thickness(nodes));
+            if EleType.is_shell(mesh.ele_type)
+                ele = Element(ele_id,mesh.ele_type,mesh.coords(nodes,:), ...
+                    mesh.normals(:,:,nodes),mesh.thickness(nodes));
+            else
+                ele = Element(ele_id,mesh.ele_type,mesh.coords(nodes,:), ...
+                                [],[]);
+            end
         end
         function node_ids = ele_nodes(mesh,ele_id)
             % nodes_ids = ele_nodes(mesh,ele_id)
