@@ -2,7 +2,7 @@ classdef ElementTest < matlab.unittest.TestCase
     methods (Test)
         function K_Mech(testCase)
             a = 1;
-            mesh = Factory.ShellMesh('Q4',[1,1],[a,a,a]);
+            mesh = Factory.ShellMesh('AHMAD4',[1,1],[a,a,a]);
             ele = mesh.ele(1);
             material = Material(1,0.3,1);
             K = Physics.K_Shell(ele,material,2);
@@ -11,7 +11,7 @@ classdef ElementTest < matlab.unittest.TestCase
         end
         function B_Mech(testCase)
             a = 1;
-            mesh = Factory.ShellMesh('Q4',[1,1],[a,a,a]);
+            mesh = Factory.ShellMesh('AHMAD4',[1,1],[a,a,a]);
             ele = mesh.ele(1);
             B = Physics.B_Shell(ele,0,0,0);
             % B should be [6 x 5*nodes]
@@ -25,7 +25,7 @@ classdef ElementTest < matlab.unittest.TestCase
             % Since the element is 'cubic'
             % we expect a diagonal jacobian with a 1/2 value
             a = 1;
-            mesh = Factory.ShellMesh('Q4',[1,1],[a,a,a]);
+            mesh = Factory.ShellMesh('AHMAD4',[1,1],[a,a,a]);
             ele = mesh.ele(1);
             results = zeros(8,3);
             is_diag = true;

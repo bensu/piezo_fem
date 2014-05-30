@@ -41,19 +41,22 @@ classdef Element
                 case {'Q4','Q8','Q9'}
                     jac = element.Jac2D(ksi,eta);
                 case {'H8'}
-                    jac = Element.Jac3D(ksi,eta,zeta);
+                    jac = element.Jac3D(ksi,eta,zeta);
             end
 
         end
-        function N = ShellJac(element,ksi,eta,zeta)
-            N  = element.N(ksi,eta);
-            dN = element.dN(ksi,eta);
+        function jac = ShellJac(element,ksi,eta,zeta)
+            N  = element.N(ksi,eta,zeta);
+            dN = element.dN(ksi,eta,zeta);
             t = element.thickness;
             tt = [t; t; t];
             v3t = (element.v3.*tt)';
             jac = [ dN*(element.coords + zeta*v3t/2);
                 N*(v3t)/2 ];
-        end            
+        end
+        function jac = Jac2D(element,ksi,eta)
+            jac = element.dN(ksi,eta,0)*element.coords;
+        end
         function N = N(element,ksi,eta,zeta)
             % N = N(element,ksi,eta)
             % Element Shape Functions
@@ -75,15 +78,17 @@ classdef Element
                     N = Element.N_H8(ksi,eta,zeta);
             end
         end
-        function dN = dN(element,ksi,eta)
+        function dN = dN(element,ksi,eta,zeta)
             % N = dN(element,ksi,eta)
             % Element Shape Functions Derivatives
             % Works by fetching them from EleType
-            require(isnumeric([ksi eta]), ...
+            require(isnumeric([ksi eta zeta]), ...
                 'ArgumentError: Both ksi and eta should be numeric')
             require(-1<=ksi && ksi<=1, ...
                 'ArgumetnError: ksi should be -1<=ksi<=1')
             require(-1<=eta && eta<=1, ...
+                'ArgumetnError: eta should be -1<=eta<=1')
+            require(-1<=zeta && zeta<=1, ...
                 'ArgumetnError: eta should be -1<=eta<=1')
             switch element.type
                 case {'Q4', 'AHMAD4'}
@@ -92,6 +97,8 @@ classdef Element
                     dN = Element.dN_Q8(ksi,eta);
                 case {'Q9', 'AHMAD9'}
                     dN = Element.dN_Q9(ksi,eta);
+                case {'H8'}
+                    dN = Element.dN_H8(ksi,eta,zeta);
             end
         end
         function mu = mu_matrix(element)

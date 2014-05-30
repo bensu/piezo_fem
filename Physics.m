@@ -219,9 +219,9 @@ classdef Physics
             dofs_per_node = 5;
             % Prepare values
             v = element.normals;
-            N  = element.N(ksi,eta);
+            N  = element.N(ksi,eta,zeta);
             invJac = element.jacobian(ksi,eta,zeta) \ eye(3);
-            dN = invJac(:,1:2)*element.dN(ksi,eta);
+            dN = invJac(:,1:2)*element.dN(ksi,eta,zeta);
             B  = zeros(6,element.n_nodes*dofs_per_node);
             % B matrix has the same structure for each node, 
             % written as [aux1 aux2].

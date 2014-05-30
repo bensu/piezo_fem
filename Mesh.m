@@ -51,15 +51,23 @@ classdef Mesh
                 nuso = length(ele);     % Number of connect the node belongs to.
                 % Loop through those connect to find v
                 v = zeros(nuso,3);      % Vector directions (v3) of the node in each element
-                element = Element(1,mesh.ele_type,[],[],[]);
+                switch (mesh.ele_type)
+                    case {'AHMAD4'}
+                        type = 'Q4';
+                    case {'AHMAD8'}
+                        type = 'Q8';
+                    case {'AHMAD9'}
+                        type = 'Q9';
+                end
                 for e = 1:nuso
                     % Create the element
                     ele_nodes = mesh.connect(ele(e),:);
                     ele_coords = mesh.coords(ele_nodes,:);
+                    element = Element(1,type,ele_coords,[],[]);
                     
-                    % Get some simplified Jacobian of the element
-                    dN = element.dN(ksi(localNode(e)),eta(localNode(e)));
-                    jac = dN*ele_coords;
+                    % Get 2D Jacobian of the element
+%                     dN = element.dN(ksi(localNode(e)),eta(localNode(e)));
+                    jac = element.jacobian(ksi(localNode(e)),eta(localNode(e)),0);
                     
                     % Use the jacobian to get v3
                     v3 = cross(jac(1,:),jac(2,:));

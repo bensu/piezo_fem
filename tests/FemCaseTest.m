@@ -88,7 +88,7 @@ classdef FemCaseTest < matlab.unittest.TestCase
             dofs_per_node = 5;
             dofs_per_ele = 0;
             m = 2;
-            mesh = Factory.ShellMesh('Q4',[m,m],[a,b,t]);
+            mesh = Factory.ShellMesh('AHMAD4',[m,m],[a,b,t]);
             % Break the symmetry
             tol = 1e-5;
             inner = @(x,y,z) (~(abs(x-a) < tol) && ~(abs(x) < tol) && ...
