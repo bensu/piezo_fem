@@ -35,6 +35,17 @@ classdef Element
             % Computes the jacobian for Shell Elements
             % Cook [6.7-2] gives Isoparametric Jacobian
             % Cook [12.5-4] & [12.5-2] gives Shells Derivatives.
+            switch element.type
+                case {'AHMAD4','AHMAD8','AHMAD9'}
+                    jac = element.ShellJac(ksi,eta,zeta);                                       
+                case {'Q4','Q8','Q9'}
+                    jac = element.Jac2D(ksi,eta);
+                case {'H8'}
+                    jac = Element.Jac3D(ksi,eta,zeta);
+            end
+
+        end
+        function N = ShellJac(element,ksi,eta,zeta)
             N  = element.N(ksi,eta);
             dN = element.dN(ksi,eta);
             t = element.thickness;
@@ -42,8 +53,8 @@ classdef Element
             v3t = (element.v3.*tt)';
             jac = [ dN*(element.coords + zeta*v3t/2);
                 N*(v3t)/2 ];
-        end
-        function N = N(element,ksi,eta)
+        end            
+        function N = N(element,ksi,eta,zeta)
             % N = N(element,ksi,eta)
             % Element Shape Functions
             % Works by fetching them from EleType
@@ -60,6 +71,8 @@ classdef Element
                     N = Element.N_Q8(ksi,eta);
                 case {'Q9','AHMAD9'}
                     N = Element.N_Q9(ksi,eta);
+                case {'H8'}
+                    N = Element.N_H8(ksi,eta,zeta);
             end
         end
         function dN = dN(element,ksi,eta)
