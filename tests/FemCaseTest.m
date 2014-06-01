@@ -27,7 +27,7 @@ classdef FemCaseTest < matlab.unittest.TestCase
             dofs_per_ele = 0;
             n = 1;
             m = 2*n;
-            mesh = Factory.ShellMesh('AHMAD8',[m,n],[a,b,t]);
+            mesh = Factory.ShellMesh(EleType.AHMAD8,[m,n],[a,b,t]);
             material = Material(E,nu,rho);
             K = @(element) Physics.K_Shell(element,material,3);
             physics = Physics(5,0,K);
@@ -88,7 +88,7 @@ classdef FemCaseTest < matlab.unittest.TestCase
             dofs_per_node = 5;
             dofs_per_ele = 0;
             m = 2;
-            mesh = Factory.ShellMesh('AHMAD4',[m,m],[a,b,t]);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,[m,m],[a,b,t]);
             % Break the symmetry
             tol = 1e-5;
             inner = @(x,y,z) (~(abs(x-a) < tol) && ~(abs(x) < tol) && ...

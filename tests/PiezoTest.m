@@ -30,7 +30,7 @@ classdef PiezoTest < matlab.unittest.TestCase
             expected_V = x(3)*t/2;  % Not clear why is the /2 needed
             
             %% FEM and MESH
-            mesh = Factory.ShellMesh('AHMAD4',[4,2],[a,b,t]);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,[4,2],[a,b,t]);
             piezo_matrix = zeros(3,6);
             piezo_matrix(3,1:3) = [d13 d13 0];
             material = Material.Piezo(E,nu,rho,piezo_matrix,[0 0 e3]);

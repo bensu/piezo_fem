@@ -54,12 +54,12 @@ classdef Mesh
                 % Loop through those connect to find v
                 v = zeros(nuso,3);      % Vector directions (v3) of the node in each element
                 switch (mesh.ele_type)
-                    case {'AHMAD4'}
-                        type = 'Q4';
-                    case {'AHMAD8'}
-                        type = 'Q8';
-                    case {'AHMAD9'}
-                        type = 'Q9';
+                    case {EleType.AHMAD4}
+                        type = EleType.Q4;
+                    case {EleType.AHMAD8}
+                        type = EleType.Q8;
+                    case {EleType.AHMAD9}
+                        type = EleType.Q9;
                 end
                 for e = 1:nuso
                     % Create the element

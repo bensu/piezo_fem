@@ -102,11 +102,11 @@ classdef Factory
             end
             connect = connect(:,[1 3 9 7 2 6 8 4 5]);
             switch type
-                case {'Q4' 'AHMAD4'}
+                case {EleType.Q4 EleType.AHMAD4}
                     [coords, connect] = Factory.remove_nodes(coords,connect(:,1:4));
-                case {'Q8' 'AHMAD8'}
+                case {EleType.Q8 EleType.AHMAD8}
                     [coords, connect] = Factory.remove_nodes(coords,connect(:,1:8));
-                case {'Q9' 'AHMAD9'}
+                case {EleType.Q9 EleType.AHMAD9}
                 otherwise
                     error('Wrong type of element: should be Q4, Q8, or Q9');
             end

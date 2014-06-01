@@ -3,7 +3,7 @@ classdef MeshTest < matlab.unittest.TestCase
         function AssemblyTest(testCase)
             % Tests the assembly function using on 2 elements checking
             % where are the dofs coupled
-            mesh = Factory.ShellMesh('AHMAD4',[2,1],[1,1,0.1]);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,[2,1],[1,1,0.1]);
             material = Material(1,0.3,1);
             dofs_per_ele = 0;
             dofs_per_node = 5;
@@ -24,7 +24,7 @@ classdef MeshTest < matlab.unittest.TestCase
         end
         function AssemblyBasicTest(testCase)
             % Tests the assembly function using only one element
-            mesh = Factory.ShellMesh('AHMAD4',[1,1],[1,1,0.1]);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[1,1,0.1]);
             material = Material(1,0.3,1);
             dofs_per_ele = 0;
             dofs_per_node = 5;
@@ -34,7 +34,7 @@ classdef MeshTest < matlab.unittest.TestCase
             testCase.verifyEqual(true,near(norm(diag(K)),norm(diag(S))));
         end
         function ShellMeshTest(testCase)
-            mesh = Factory.ShellMesh('AHMAD4',[1,1],[1,1,0.1]);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[1,1,0.1]);
             % Check basic properties
             testCase.verifyEqual(4,mesh.n_nodes);
             testCase.verifyEqual(1,mesh.n_ele);

@@ -22,7 +22,7 @@ classdef DynamicTest < matlab.unittest.TestCase
             dofs_per_node = 5;
             dofs_per_ele = 0;
             n = 6;
-            mesh = Factory.ShellMesh('AHMAD8',[2*n,n],[a,b,t]);
+            mesh = Factory.ShellMesh(EleType.AHMAD8,[2*n,n],[a,b,t]);
             material = Material(E,nu,rho);
             M = @(element) Physics.M_Shell(element,material,3);
             K = @(element) Physics.K_Shell(element,material,3);
@@ -112,7 +112,7 @@ classdef DynamicTest < matlab.unittest.TestCase
             % Elements along the side
             dofs_per_node = 5;
             dofs_per_ele = 0;
-            mesh = Factory.ShellMesh('AHMAD8',[10,5],[a,b,t]);
+            mesh = Factory.ShellMesh(EleType.AHMAD8,[10,5],[a,b,t]);
             material = Material(E,nu,rho);
             M = @(element) Physics.M_Shell(element,material,3);
             K = @(element) Physics.K_Shell(element,material,3);
@@ -148,7 +148,7 @@ classdef DynamicTest < matlab.unittest.TestCase
             % Elements along the side
             dofs_per_node = 5;
             dofs_per_ele = 0;
-            mesh = Factory.ShellMesh('AHMAD4',[1,1],[a,b,t]);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[a,b,t]);
             material = Material(E,nu,rho);
             M = @(element) Physics.M_Shell(element,material,3);
             K = @(element) Physics.K_Shell(element,material,3);

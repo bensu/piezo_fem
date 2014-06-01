@@ -156,9 +156,9 @@ classdef Element
             s_coord     = [2 1 2 1]';
             s_values    = [-1 1 1 -1]';
             switch (ele_type)
-                case {'Q4' 'AHMAD4'}
+                case {EleType.Q4 EleType.AHMAD4}
                     nodes_per_surface = 2;
-                case {'Q8' 'Q9' 'AHMAD8' 'AHMAD9'}
+                case {EleType.Q8 EleType.Q9 EleType.AHMAD8 EleType.AHMAD9}
                     nodes_per_surface = 3;
             end
             surfaces = surfaces(:,1:nodes_per_surface);
