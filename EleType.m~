@@ -2,21 +2,8 @@ classdef EleType
     properties
         n_nodes             % nodes_per_element
         nodes_per_surface
-    end
     enumeration
-        Q4      (4,2)
-        Q8      (8,3)
-        Q9      (9,3)
-        AHMAD4  (4,2)
-        AHMAD8  (8,3)
-        AHMAD9  (9,3)
-        H8      (8,4)
-    end
-    methods
-        function et = EleType(n_nodes,nodes_per_surface)
-            et.n_nodes = n_nodes;
-            et.nodes_per_surface = nodes_per_surface;
-        end
+        Q4, Q8, Q9, AHMAD4, AHMAD8, AHMAD9, H8
     end
     % EleType.Q4, EleType.Q8, EleType.Q9, EleType.H8
     methods (Static)

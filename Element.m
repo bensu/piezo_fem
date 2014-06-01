@@ -71,13 +71,13 @@ classdef Element
                 'ArgumetnError: eta should be -1<=eta<=1')
             switch element.type
                 case {EleType.Q4, EleType.AHMAD4}
-                    N = Element.N_Q4(ksi,eta);                                       
+                    N = EleType.N_Q4(ksi,eta);                                       
                 case {EleType.Q8,EleType.AHMAD8}
-                    N = Element.N_Q8(ksi,eta);
+                    N = EleType.N_Q8(ksi,eta);
                 case {EleType.Q9,EleType.AHMAD9}
-                    N = Element.N_Q9(ksi,eta);
+                    N = EleType.N_Q9(ksi,eta);
                 case {EleType.H8}
-                    N = Element.N_H8(ksi,eta,zeta);
+                    N = EleType.N_H8(ksi,eta,zeta);
             end
         end
         function dN = dN(element,ksi,eta,zeta)
@@ -94,11 +94,11 @@ classdef Element
                 'ArgumetnError: eta should be -1<=eta<=1')
             switch element.type
                 case {EleType.Q4, EleType.AHMAD4}
-                    dN = Element.dN_Q4(ksi,eta);
+                    dN = EleType.dN_Q4(ksi,eta);
                 case {EleType.Q8,EleType.AHMAD8}
-                    dN = Element.dN_Q8(ksi,eta);
+                    dN = EleType.dN_Q8(ksi,eta);
                 case {EleType.Q9,EleType.AHMAD9}
-                    dN = Element.dN_Q9(ksi,eta);
+                    dN = EleType.dN_Q9(ksi,eta);
                 case {EleType.H8}
                     dN = EleType.dN_H8(ksi,eta,zeta);
             end
@@ -155,6 +155,7 @@ classdef Element
                         1 4 8];
             s_coord     = [2 1 2 1]';
             s_values    = [-1 1 1 -1]';
+            % Switch should go to EleType
             switch (ele_type)
                 case {EleType.Q4 EleType.AHMAD4}
                     nodes_per_surface = 2;
@@ -196,117 +197,6 @@ classdef Element
                 i = index_range(dim,n);
                 NN(:,i) = N(n)*I;
             end
-        end
-        function N = N_Q4(ksi,eta)
-            % N = N_Q4(ksi,eta)
-            % N [1 x 4][Float]: Shape Functions for Q4 element
-            % Follows anti-clockwise node-numbering convention:
-            % (ksi,eta) = [(-1,-1), (1,-1), (1,1), (-1,1)]
-            N4 = 0.25*(1 - ksi)*(1 + eta);
-            N3 = 0.25*(1 + ksi)*(1 + eta);
-            N2 = 0.25*(1 + ksi)*(1 - eta);
-            N1 = 0.25*(1 - ksi)*(1 - eta);
-            N = [N1 N2 N3 N4];
-        end
-        function dN = dN_Q4(ksi,eta)
-            % dN = dN_Q4(ksi,eta)
-            % dN [2 x 4][Float]: Shape functions derivatives
-            % dN = [dN_dksi; dN_deta];
-            % Follows same numbering convention as N_Q4
-            dN = [  % dN_ksi
-            -0.25*(1 - eta),    ...
-            0.25*(1 - eta),     ...
-            0.25*(1 + eta),     ...
-            -0.25*(1 + eta)
-            % dN_deta
-            -0.25*(1 - ksi),    ...
-            -0.25*(1 + ksi),    ...
-            0.25*(1 + ksi),     ...
-            0.25*(1 - ksi) ];
-        end
-        function N = N_Q8(ksi,eta)
-            % N = N_Q8(ksi,eta)
-            % N [1 x 8][Float]: Shape Functions for Q8 element
-            % Follows anti-clockwise node-numbering convention:
-            % (ksi,eta) = [(-1,-1), (1,-1), (1,1), (-1,1) ...
-            %               (0,-1), (1,0),  (0,1), (-1,0)]
-            N8 = 0.50*(1 - ksi  )*(1 - eta^2);
-            N7 = 0.50*(1 - ksi^2)*(1 + eta  );
-            N6 = 0.50*(1 + ksi  )*(1 - eta^2);
-            N5 = 0.50*(1 - ksi^2)*(1 - eta  );
-            N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8);
-            N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7);
-            N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6);
-            N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8);
-            N = [N1 N2 N3 N4 N5 N6 N7 N8];
-            
-        end
-        function dN = dN_Q8(ksi,eta)
-            % dN = dN_Q8(ksi,eta)
-            % dN [2 x 8][Float]: Shape functions derivatives
-            % dN = [dN_dksi; dN_deta];
-            % Follows same numbering convention as N_Q8
-            dN = [  % dN_ksi
-            -0.25*(-1+eta)*(eta+2*ksi),     ...
-            -0.25*(-1+eta)*(-eta+2*ksi),    ...
-            0.25*(1+eta)*(eta+2*ksi),       ...
-            0.25*(1+eta)*(-eta+2*ksi),      ...
-            ksi*(-1+eta),                   ...
-            -0.5*(-1+eta)*(1+eta),          ...
-            -ksi*(1+eta),                   ...
-            0.5*(-1+eta)*(1+eta);
-            % dN_deta
-            -0.25*(-1+ksi)*(ksi+2*eta),     ...
-            -0.25*(1+ksi)*(ksi-2*eta),      ...
-            0.25*(1+ksi)*(ksi+2*eta),       ...
-            0.25*(-1+ksi)*(ksi-2*eta),      ...
-            0.5*(-1+ksi)*(1+ksi),           ...
-            -(1+ksi)*eta,                   ...
-            -0.5*(-1+ksi)*(1+ksi),          ...
-            (-1+ksi)*eta ];
-        end
-        function N = N_Q9(ksi,eta)
-            % N = N_Q9(ksi,eta)
-            % N [1 x 9][Float]: Shape Functions for Q9 element
-            % Follows anti-clockwise node-numbering convention:
-            % (ksi,eta) = [(-1,-1), (1,-1), (1,1), (-1,1) ...
-            %               (0,-1), (1,0),  (0,1), (-1,0), (0,0)]
-            N9 =      (1 - ksi^2)*(1 - eta^2);
-            N8 = 0.50*(1 - ksi  )*(1 - eta^2) - 0.5*N9;
-            N7 = 0.50*(1 - ksi^2)*(1 + eta  ) - 0.5*N9;
-            N6 = 0.50*(1 + ksi  )*(1 - eta^2) - 0.5*N9;
-            N5 = 0.50*(1 - ksi^2)*(1 - eta  ) - 0.5*N9;
-            N4 = 0.25*(1 - ksi  )*(1 + eta  ) - 0.5*(N7 + N8 + 0.5*N9);
-            N3 = 0.25*(1 + ksi  )*(1 + eta  ) - 0.5*(N6 + N7 + 0.5*N9);
-            N2 = 0.25*(1 + ksi  )*(1 - eta  ) - 0.5*(N5 + N6 + 0.5*N9);
-            N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
-            N  = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
-        end
-        function dN = dN_Q9(ksi,eta)
-            % dN = dN_Q9(ksi,eta)
-            % dN [2 x 9][Float]: Shape functions derivatives
-            % dN = [dN_dksi; dN_deta];
-            % Follows same numbering convention as N_Q9
-            dN = [   % dN_ksi
-                0.25*eta*(-1+eta)*(2*ksi-1),    ...
-                0.25*eta*(-1+eta)*(2*ksi+1),    ...
-                0.25*eta*(1+eta)*(2*ksi+1),     ...
-                0.25*eta*( 1+eta)*(2*ksi-1),    ...
-                -ksi*eta*(-1+eta),              ...
-                -1/2*(-1+eta)*(1+eta)*(2*ksi+1),...
-                -ksi*eta*(1+eta),               ...
-                -1/2*(-1+eta)*(1+eta)*(2*ksi-1),...
-                2*ksi*(-1+eta)*(1+eta);
-                % dN_eta
-                0.25*ksi*(-1+2*eta)*(ksi-1),    ...
-                0.25*ksi*(-1+2*eta)*(1+ksi),    ...
-                0.25*ksi*(2*eta+1)*(1+ksi),     ...
-                0.25*ksi*(2*eta+1)*(ksi-1),     ...
-                -0.5*(ksi-1)*(1+ksi)*(-1+2*eta),...
-                -ksi*eta*(1+ksi),               ...
-                -0.5*(ksi-1)*(1+ksi)*(2*eta+1), ...
-                -ksi*eta*(ksi-1),               ...
-                2*(ksi-1)*(1+ksi)*eta ];
         end
 
     end

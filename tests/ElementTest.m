@@ -56,7 +56,7 @@ classdef ElementTest < matlab.unittest.TestCase
             for xi = -1:2:1
                 for eta = -1:2:1
                     for mu = -1:2:1
-                        results = Element.N_Q4(xi,eta);
+                        results = EleType.N_Q4(xi,eta);
                         value(count) = any(results==1);
                         magnitude(count) = norm(results);
                         count = count + 1;
