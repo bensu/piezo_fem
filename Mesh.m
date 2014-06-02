@@ -99,7 +99,7 @@ classdef Mesh
             % fun_in [FHandle](element,surface_c,surface_value)
             ele_ids = mesh.unique_eles(s_nodes);
             ele_s = mesh.ele_surfaces(s_nodes,ele_ids);
-            [~, s_coord, s_val] = Element.surfaces(mesh.ele_type);
+            [~, s_coord, s_val] = mesh.ele_type.surfaces();
             function L_out = aux_fun(element)
                 surfaces = ele_s{element.id == ele_ids};    % Element's surface #
                 L_out = [];
@@ -331,7 +331,7 @@ classdef Mesh
             n_ele = length(ele_ids);    % Number of elements
             ele_surfaces = cell(n_ele,1);
             % surfaces contains data from the element type
-            surfaces = Element.surfaces(mesh.ele_type);
+            surfaces = mesh.ele_type.surfaces();
             % Loop through all elements
             for e = 1:n_ele
                 % Get all of its nodes
