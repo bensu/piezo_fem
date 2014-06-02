@@ -14,11 +14,35 @@ classdef EleType
     end
     methods
         function et = EleType(n_nodes,nodes_per_surface)
+            % et = EleType(n_nodes,nodes_per_surface)
+            % Initializer, should contain all the properties, for
+            % enumeration
             et.n_nodes = n_nodes;
             et.nodes_per_surface = nodes_per_surface;
         end
+        function [surfaces, s_coord, s_values] = surfaces(ele_type)
+            % [surfaces, s_directions, s_values] = surfaces(ele_type)
+            % Returns the nodes in each surface for the element type
+            % Each element has 4 surfaces, each one has an id (1 through 4)
+            % Each surface has either 1 or 3 nodes depending on the element.
+            % The surface can be defined by fixing one of the local
+            % coordinates, i.e. eta = 1 or ksi = -1.
+            % surfaces [4 x 3][Int]: each row has the nodes of the surface
+            % s_coord [4 x 1][Int]: each row has the local coordinate
+            % that remains fixed to represent that surface.
+            % s_values [4-6 x 1][Float]: the value of the coord that remains
+            % fixed, usually -1 or 1.
+            
+            % BREAKS FOR H8
+            surfaces = [1 2 5; 
+                        2 3 6;
+                        3 4 7;
+                        1 4 8];
+            s_coord     = [2 1 2 1]';
+            s_values    = [-1 1 1 -1]';
+            surfaces = surfaces(:,1:ele_type.nodes_per_surface);
+        end
     end
-    % EleType.Q4, EleType.Q8, EleType.Q9, EleType.H8
     methods (Static)
         %% Shell Elements
         function types = Shell_Types()
