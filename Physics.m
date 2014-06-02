@@ -159,19 +159,11 @@ classdef Physics
                     Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
                 K_in_point = B'*C*B*det(jac);
             end
-            %% Generates gauss points for a series of segments in zeta
-            zeta_top = [-1 laminate.zeta_top];
-            zeta_thickness = laminate.zeta_t;
-            zeta_vals = [];
-            zeta_weights = [];
-            for i = 2:length(zeta_top)
-                [g_p,g_w] = Integral.lgwt(2,zeta_top(i-1),zeta_top(i));
-                zeta_vals    = [zeta_vals g_p];
-                zeta_weights = [zeta_weights g_w];
-            end
+            %% Generates gauss points for a series for zeta (with laminate) and ksi and eta
+            [zeta_p, zeta_w] = laminate.quadrature(2);
             [g_p,g_w] = Integral.lgwt(order,-1,1);
-            points  = {g_p,g_p,zeta_vals'};
-            weights = {g_w,g_w,zeta_weights'};
+            points  = {g_p,g_p,zeta_p'};
+            weights = {g_w,g_w,zeta_w'};
             fun_in = @(ksi,eta,zeta) (K_in_point(ksi,eta,zeta));
             K = Integral.quadrature(points,weights,fun_in);
         end

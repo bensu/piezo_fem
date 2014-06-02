@@ -32,6 +32,19 @@ classdef Laminate
             zeta_vals = lam.zeta_top;
             mat_out = lam.mat_list(find(zeta <= zeta_vals,1,'last'));            
         end
+        function [zeta_p, zeta_w] = quadrature(laminate,order)
+            % [zeta_p, zeta_w] = quadrature(laminate,order)
+            % Generates all the gauss points and weights for a piecewise
+            % integration along the laminate.
+            zeta_top = [-1 laminate.zeta_top];
+            zeta_p = [];
+            zeta_w = [];
+            for i = 2:length(zeta_top)
+                [g_p,g_w] = Integral.lgwt(order,zeta_top(i-1),zeta_top(i));
+                zeta_p    = [zeta_p g_p];
+                zeta_w    = [zeta_w g_w];
+            end
+        end
         function zeta_vals = zeta_top(lam)
             % zeta_vals = zeta_top(lam)
             % Transforms the thickness coordinate of each layer's top surface to

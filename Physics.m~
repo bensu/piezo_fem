@@ -17,7 +17,7 @@ classdef Physics
         end
     end
     methods (Static)
-         function B = B_H8(element,ksi,eta,zeta)
+        function B = B_H8(element,ksi,eta,zeta)
             AUX = zeros(6,9);
             AUX([1 10 18 22 26 35 42 47 51]) = 1;
             Tinv = inv(element.jacobian(ksi,eta,zeta));
@@ -128,7 +128,7 @@ classdef Physics
             end
             fun_in = @(ksi,eta,zeta) (apply_point_load(element,q, ...
                 ksi,eta,zeta));
-            L = Integral.Volume3D(fun_in,order,-1 1]);
+            L = Integral.Volume3D(fun_in,order,-1,1);
         end
         function M = M_Shell(element,laminate,order)
             % M = M_Shell(element,material,order)
@@ -143,7 +143,7 @@ classdef Physics
                 M_in_point = rho*(N')*N*det(jac);
             end
             fun_in = @(xi,eta,mu) (M_in_point(xi,eta,mu));
-            M = Integral.Volume3D(fun_in,order,[-1 1]);
+            M = Integral.Volume3D(fun_in,order,-1,1);
         end
         function K = K_Shell(element,laminate,order)
             % K = K_Shell(element,material,order)
@@ -159,8 +159,13 @@ classdef Physics
                     Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
                 K_in_point = B'*C*B*det(jac);
             end
-            fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
-            K = Integral.Volume3D(fun_in,order,[-1 1]);
+            %% Generates gauss points for a series of segments in zeta
+
+            [g_p,g_w] = Integral.lgwt(order,-1,1);
+            points  = {g_p,g_p,zeta_vals'};
+            weights = {g_w,g_w,zeta_weights'};
+            fun_in = @(ksi,eta,zeta) (K_in_point(ksi,eta,zeta));
+            K = Integral.quadrature(points,weights,fun_in);
         end
         function K = K_Shell_selective(element,laminate,normal_order,shear_order)
             % K = K_Shell_selective(element,material,normal_order,shear_order)
@@ -185,10 +190,10 @@ classdef Physics
             end
             % Normal Part
             fun_n = @(xi,eta,mu) (K_in_point(true,xi,eta,mu));
-            K_n = Integral.Volume3D(fun_n,normal_order,[-1 1]);
+            K_n = Integral.Volume3D(fun_n,normal_order,-1,1);
             % Shear Part
             fun_shear = @(xi,eta,mu) (K_in_point(false,xi,eta,mu));
-            K_s = Integral.Volume3D(fun_shear,shear_order,[-1 1]);
+            K_s = Integral.Volume3D(fun_shear,shear_order,-1,1);
             K = K_s + K_n;
         end
         function C = Elastic(material)
