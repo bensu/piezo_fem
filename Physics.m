@@ -34,7 +34,7 @@ classdef Physics
             obj = Physics(dofs_per_node,dofs_per_ele,k);
             obj.m = m;            
         end
-        function K = K_PiezoShell(element,material,order)
+        function K = K_PiezoShell(element,laminate,order)
             % K = K_PiezoShell(element,material,order)
             % K [ele_dof x ele_dof][Float] Stiffness as calculated in
             % Cook 361 12.4-14
@@ -44,15 +44,16 @@ classdef Physics
             % Constitutive Relationship
             % Both material properties skip 3rd col because it is a plain
             % stress problem
-            elastic = Physics.ElasticShell(material);
-            piezo = -material.D(:,[1 2 4 5 6]);  
-            electric = -diag(material.e);
-            C = [   elastic  piezo';
-                    piezo   electric];
             % Function to be integrated
             function K_in_point = K_in_point(ksi,eta,zeta)
                 % Piezo Part, generates the Electric Field (only z
                 % component from 2 or 1 voltage element dof.
+                material = laminate.material(zeta);
+                elastic = Physics.ElasticShell(material);
+                piezo = -material.D(:,[1 2 4 5 6]);  
+                electric = -diag(material.e);
+                C = [   elastic  piezo';
+                        piezo   electric];
                 jac = element.jacobian(ksi,eta,zeta);
                 cosines = Element.direction_cosines(jac);
                 inv_jac = jac \ eye(3);

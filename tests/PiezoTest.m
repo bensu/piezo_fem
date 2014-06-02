@@ -34,10 +34,11 @@ classdef PiezoTest < matlab.unittest.TestCase
             piezo_matrix = zeros(3,6);
             piezo_matrix(3,1:3) = [d13 d13 0];
             material = Material.Piezo(E,nu,rho,piezo_matrix,[0 0 e3]);
+            laminate = Laminate(material,t);
             % Create the FemCase
             dofs_per_node = 5;
             dofs_per_ele = 1;
-            K = @(element) Physics.K_PiezoShell(element,material,2);
+            K = @(element) Physics.K_PiezoShell(element,laminate,2);
             physics = Physics(dofs_per_node,dofs_per_ele,K);
             fem = FemCase(mesh,physics);
             
