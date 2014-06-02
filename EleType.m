@@ -2,23 +2,26 @@ classdef EleType
     properties
         n_nodes             % nodes_per_element
         nodes_per_surface
+        N
+        dN
     end
     enumeration
-        Q4      (4,2)
-        Q8      (8,3)
-        Q9      (9,3)
-        AHMAD4  (4,2)
-        AHMAD8  (8,3)
-        AHMAD9  (9,3)
-        H8      (8,4)
+        Q4      (4,2,@EleType.N_Q4)
+        Q8      (8,3,@EleType.N_Q8)
+        Q9      (9,3,@EleType.N_Q9)
+        AHMAD4  (4,2,@EleType.N_Q4)
+        AHMAD8  (8,3,@EleType.N_Q8)
+        AHMAD9  (9,3,@EleType.N_Q9)
+        H8      (8,4,@EleType.N_H8)
     end
     methods
-        function et = EleType(n_nodes,nodes_per_surface)
+        function et = EleType(n_nodes,nodes_per_surface,N)
             % et = EleType(n_nodes,nodes_per_surface)
             % Initializer, should contain all the properties, for
             % enumeration
             et.n_nodes = n_nodes;
             et.nodes_per_surface = nodes_per_surface;
+            et.N = N;
         end
         function [surfaces, s_coord, s_values] = surfaces(ele_type)
             % [surfaces, s_directions, s_values] = surfaces(ele_type)
@@ -110,7 +113,7 @@ classdef EleType
         end
         %% 2D Elements
         %% Q4 Methods
-        function N = N_Q4(ksi,eta)
+        function N = N_Q4(ksi,eta,zeta)
             % N = N_Q4(ksi,eta)
             % N [1 x 4][Float]: Shape Functions for Q4 element
             % Follows anti-clockwise node-numbering convention:
@@ -121,7 +124,7 @@ classdef EleType
             N1 = 0.25*(1 - ksi)*(1 - eta);
             N = [N1 N2 N3 N4];
         end
-        function dN = dN_Q4(ksi,eta)
+        function dN = dN_Q4(ksi,eta,zeta)
             % dN = dN_Q4(ksi,eta)
             % dN [2 x 4][Float]: Shape functions derivatives
             % dN = [dN_dksi; dN_deta];
@@ -138,7 +141,7 @@ classdef EleType
             0.25*(1 - ksi) ];
         end
         %% Q8 methods
-        function N = N_Q8(ksi,eta)
+        function N = N_Q8(ksi,eta,zeta)
             % N = N_Q8(ksi,eta)
             % N [1 x 8][Float]: Shape Functions for Q8 element
             % Follows anti-clockwise node-numbering convention:
@@ -155,7 +158,7 @@ classdef EleType
             N = [N1 N2 N3 N4 N5 N6 N7 N8];
             
         end
-        function dN = dN_Q8(ksi,eta)
+        function dN = dN_Q8(ksi,eta,zeta)
             % dN = dN_Q8(ksi,eta)
             % dN [2 x 8][Float]: Shape functions derivatives
             % dN = [dN_dksi; dN_deta];
@@ -180,7 +183,7 @@ classdef EleType
             (-1+ksi)*eta ];
         end
         %% Q9 Methods
-        function N = N_Q9(ksi,eta)
+        function N = N_Q9(ksi,eta,zeta)
             % N = N_Q9(ksi,eta)
             % N [1 x 9][Float]: Shape Functions for Q9 element
             % Follows anti-clockwise node-numbering convention:
@@ -197,7 +200,7 @@ classdef EleType
             N1 = 0.25*(1 - ksi  )*(1 - eta  ) - 0.5*(N5 + N8 + 0.5*N9);
             N  = [N1 N2 N3 N4 N5 N6 N7 N8 N9];
         end
-        function dN = dN_Q9(ksi,eta)
+        function dN = dN_Q9(ksi,eta,zeta)
             % dN = dN_Q9(ksi,eta)
             % dN [2 x 9][Float]: Shape functions derivatives
             % dN = [dN_dksi; dN_deta];

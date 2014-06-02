@@ -92,7 +92,7 @@ classdef Physics
                 aux = 1:3;  aux(s_coord) = [];
                 v1 = jac(aux(1),:)';
                 v2 = jac(aux(2),:)';
-                NN = Element.shape_to_diag(length(q),element.N(ksi,eta));
+                NN = Element.shape_to_diag(length(q),element.N(ksi,eta,0));
                 L = NN'*norm(cross(v1,v2))*q;
             end
             switch (s_coord)
@@ -122,7 +122,7 @@ classdef Physics
             function L = apply_point_load(element,q,ksi,eta,zeta)
                 % L = apply_point_load(element,q,ksi,eta,zeta)
                 % Used as lambda in apply_surface_load and apply_volume_load
-                NN = Element.shape_to_diag(length(q),element.N(ksi,eta));
+                NN = Element.shape_to_diag(length(q),element.N(ksi,eta,0));
                 L = NN'*det(element.jacobian(ksi,eta,zeta))*q;
             end
             fun_in = @(ksi,eta,zeta) (apply_point_load(element,q, ...

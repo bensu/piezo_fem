@@ -69,16 +69,17 @@ classdef Element
                 'ArgumetnError: ksi should be -1<=ksi<=1')
             require(-1<=eta && eta<=1, ...
                 'ArgumetnError: eta should be -1<=eta<=1')
-            switch element.type
-                case {EleType.Q4, EleType.AHMAD4}
-                    N = EleType.N_Q4(ksi,eta);                                       
-                case {EleType.Q8,EleType.AHMAD8}
-                    N = EleType.N_Q8(ksi,eta);
-                case {EleType.Q9,EleType.AHMAD9}
-                    N = EleType.N_Q9(ksi,eta);
-                case {EleType.H8}
-                    N = EleType.N_H8(ksi,eta,zeta);
-            end
+            N = element.type.N(ksi,eta,zeta);
+%             switch element.type
+%                 case {EleType.Q4, EleType.AHMAD4}
+%                     N = EleType.N_Q4(ksi,eta);                                       
+%                 case {EleType.Q8,EleType.AHMAD8}
+%                     N = EleType.N_Q8(ksi,eta);
+%                 case {EleType.Q9,EleType.AHMAD9}
+%                     N = EleType.N_Q9(ksi,eta);
+%                 case {EleType.H8}
+%                     N = EleType.N_H8(ksi,eta,zeta);
+%             end
         end
         function dN = dN(element,ksi,eta,zeta)
             % N = dN(element,ksi,eta)
@@ -121,7 +122,7 @@ classdef Element
             I = eye(3);
             mu = element.mu_matrix;
             t  = element.thickness;
-            N2 = element.N(ksi,eta);
+            N2 = element.N(ksi,eta,0);
             for n = 1:element.n_nodes
                 N(:,index_range(5,n)) = N2(n)*[I 0.5*t(n)*zeta*mu(:,:,n)];
             end
