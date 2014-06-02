@@ -28,7 +28,8 @@ classdef FemCaseTest < matlab.unittest.TestCase
             n = 1;
             m = 2*n;
             mesh = Factory.ShellMesh(EleType.AHMAD8,[m,n],[a,b,t]);
-            laminate = Laminate(Material(E,nu,rho),t);
+            material = Material(E,nu,rho);
+            laminate = Laminate([material material],[t/3 2*t/3]);
             K = @(element) Physics.K_Shell(element,laminate,3);
             physics = Physics(5,0,K);
             fem = FemCase(mesh,physics);

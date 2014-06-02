@@ -12,9 +12,9 @@ classdef Integral
             % order [Int]: Gauss integration
             % [a,b] => interval [1x2][Float]: Surface sides for integration
             [g_p,g_w] = Integral.lgwt(order,a,b);
-            points  = [g_p g_p];
-            weights = [g_w g_w];
-            mat_out = Integral.generic_quadrature(points,weights,fun_in);
+            points  = {g_p,g_p};
+            weights = {g_w,g_w};
+            mat_out = Integral.quadrature(points,weights,fun_in);
         end
         function mat_out = Volume3D(fun_in,order,a,b)
             % mat_out = Volume3D(fun_in,fun_size,order,interval)
@@ -24,35 +24,36 @@ classdef Integral
             % [a,b] => interval [1x2][Float]:  Cube sides for integration
             % sampling points & weights
             [g_p,g_w] = Integral.lgwt(order,a,b);
-            points  = [g_p g_p g_p];
-            weights = [g_w g_w g_w];
-            mat_out = Integral.generic_quadrature(points,weights,fun_in);
+            points  = {g_p, g_p, g_p};
+            weights = {g_w, g_w, g_w};
+            mat_out = Integral.quadrature(points,weights,fun_in);
         end
-        function mat_out = generic_quadrature(points,weights,fun_in)
+        function mat_out = quadrature(points,weights,fun_in)
             % mat_out = generic_quadrature(points,weigths,fun_in)
             % mat_out [fun_in output size]
             % fun_in [Fhandle] function(xi,eta,mu) to be integrated
-            % points [n_points x dim]: Places where the function should be
+            % points {[n_points x 1] x dim}: Places where the function should be
             % evaluated
-            % weights [n_points x dim]: Weights to assign to each of those
+            % weights {[n_points x 1] x dim}: Weights to assign to each of those
             % evaluations
             require(all(size(points) == size(weights)), ...
                 'ArgumentError: points and weights should have same size');
             require(nargin(fun_in) == size(points,2), ...
                 'ArgumentError: points columns should == fun_in number of args');
             %% Prepare values for variable length argument lists
+            % allcomb() should take a variable argument list and that can
+            % only be done by having points and weights as cells
             dim   = size(points,2);  % Dimensions
-            point_cell  = cell(1,dim);
-            weight_cell = cell(1,dim);
             try_values  = cell(1,dim);
             for d = 1:dim
-                point_cell{d}    = points(:,d);
-                weight_cell{d}   = weights(:,d);
-                try_values{d}    = points(1,d);
+                try_values{d}    = points{d}(1);
             end
             %% Get all possible combinations of the points and weights
-            p_comb  = Integral.allcomb(point_cell{:});
-            w_comb  = Integral.allcomb(weight_cell{:});
+            % By having all the combinations in an explicit array form
+            % where each row is a combination, the summation can be done
+            % with only one loop.
+            p_comb  = Integral.allcomb(points{:});
+            w_comb  = Integral.allcomb(weights{:});
             %% Integrate along those combinations
             % Initialization of Matrix
             mat_out = zeros(size(fun_in(try_values{:})));
