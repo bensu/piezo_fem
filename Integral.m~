@@ -5,29 +5,6 @@ classdef Integral
     %   - Surface2D
     %   - Volume3D
     methods (Static)
-        function mat_out = Surface2D(fun_in,order,a,b)
-            % mat_out = Surface2D(fun_in,order,interval)
-            % mat_out [fun_size,fun_size]
-            % fun_in [Fhandle] function(ksi,eta) to be integrated
-            % order [Int]: Gauss integration
-            % [a,b] => interval [1x2][Float]: Surface sides for integration
-            [g_p,g_w] = Integral.lgwt(order,a,b);
-            points  = [g_p g_p];
-            weights = [g_w g_w];
-            mat_out = Integral.generic_quadrature(points,weights,fun_in);
-        end
-        function mat_out = Volume3D(fun_in,order,a,b)
-            % mat_out = Volume3D(fun_in,fun_size,order,interval)
-            % mat_out [fun_size,fun_size]
-            % fun_in [Fhandle] function(xi,eta,mu) to be integrated
-            % order [Int][>0] Gauss integration
-            % [a,b] => interval [1x2][Float]:  Cube sides for integration
-            % sampling points & weights
-            [g_p,g_w] = Integral.lgwt(order,a,b);
-            points  = [g_p g_p g_p];
-            weights = [g_w g_w g_w];
-            mat_out = Integral.generic_quadrature(points,weights,fun_in);
-        end
         function mat_out = generic_quadrature(points,weights,fun_in)
             % mat_out = generic_quadrature(points,weigths,fun_in)
             % mat_out [fun_in output size]
@@ -40,31 +17,82 @@ classdef Integral
                 'ArgumentError: points and weights should have same size');
             require(nargin(fun_in) == size(points,2), ...
                 'ArgumentError: points columns should == fun_in number of args');
-            %% Prepare values for variable length argument lists
+            order = size(points,1);  % Number of points per dimension
             dim   = size(points,2);  % Dimensions
-            point_cell  = cell(1,dim);
-            weight_cell = cell(1,dim);
-            try_values  = cell(1,dim);
+            %% Prepare values for variable length argument lists
+            point_cell      = cell(1,dim);
+            weight_cell     = cell(1,dim);
+            try_values      = cell(1,dim);
             for d = 1:dim
                 point_cell{d}    = points(:,d);
                 weight_cell{d}   = weights(:,d);
                 try_values{d}    = points(1,d);
             end
             %% Get all possible combinations of the points and weights
-            p_comb  = Integral.allcomb(point_cell{:});
-            w_comb  = Integral.allcomb(weight_cell{:});
+            poin   = Integral.allcomb(point_cell{:});
+            linear_weights  = Integral.allcomb(weight_cell{:});
             %% Integrate along those combinations
             % Initialization of Matrix
             mat_out = zeros(size(fun_in(try_values{:})));
-            for i = 1:size(p_comb,1)
+            for i = 1:size(linear_points,1)
                 var_args = cell(1,dim);
                 for d = 1:dim
-                    var_args{d} = p_comb(i,d);
+                    var_args{d} = linear_points(i,d);
                 end
-                mat_out = mat_out + prod(w_comb(i,:))*fun_in(var_args{:});
+                mat_out = mat_out + prod(linear_weights(i,:))*fun_in(var_args{:});
             end
         end
-        %% 1D Gauss Functions
+        function mat_out = Surface2D(fun_in,order,interval)
+            % mat_out = Surface2D(fun_in,order,interval)
+            % mat_out [fun_size,fun_size]
+            % fun_in [Fhandle] function(ksi,eta) to be integrated
+            % order [Int]: Gauss integration
+            % interval [1x2][Float]: Surface sides for integration
+            require(isnumeric(order), ...
+                'ArgumentError: order should be numeric');
+            require(order > 0, ...
+                'ArgumentError: order should be > 0');
+            require(~mod(order,1), ...
+                'ArgumentError: order should be integer');
+            require(length(interval)==2, ...
+                'ArgumentError: interval should have two numbers');
+            require(isnumeric(interval), ...
+                'ArgumentError: interval should be numeric');
+            [gauss_p,gauss_w] = Integral.lgwt(order,interval(1),interval(2));     % sampling points & weights
+            mat_out = zeros(size(fun_in(0,0))); % Initialization of Matrix
+            % Numerical integration
+            for int_xi = 1:order
+                xi  = gauss_p(int_xi,1); % sampling point in x-axis
+                wtx = gauss_w(int_xi,1); % weight in x-axis	
+                for int_eta = 1:order
+                    eta = gauss_p(int_eta,1); % sampling point in y-axis
+                    wty = gauss_w(int_eta,1); % weight in y-axis
+                    mat_out = mat_out + wtx*wty*fun_in(xi,eta);
+                end
+            end
+        end
+        function mat_out = Volume3D(fun_in,order,interval)
+            % mat_out = Volume3D(fun_in,fun_size,order,interval)
+            % mat_out [fun_size,fun_size]
+            % fun_in [Fhandle] function(xi,eta,mu) to be integrated
+            % order [Int][>0] Gauss integration
+            % interval [1x2][Float] Cube sides for integration
+            require(isnumeric(order), ...
+                'ArgumentError: order should be numeric');
+            require(order > 0, ...
+                'ArgumentError: order should be > 0');
+            require(~mod(order,1), ...
+                'ArgumentError: order should be integer');
+            require(length(interval)==2, ...
+                'ArgumentError: interval should have two numbers');
+            require(isnumeric(interval), ...
+                'ArgumentError: interval should be numeric');
+            % sampling points & weights
+            [g_p,g_w] = Integral.lgwt(order,interval(1),interval(2));
+            points = [g_p g_p g_p];
+            weights = [g_w g_w g_w];
+            mat_out = Integral.generic_quadrature(points,weights,fun_in);
+        end
         function [x,w] = lgwt(N,a,b)
             % lgwt.m
             %
@@ -78,14 +106,6 @@ classdef Integral
             % the definite integral using sum(f.*w);
             %
             % Written by Greg von Winckel - 02/25/2004
-            require(isnumeric(N), ...
-                'ArgumentError: order should be numeric');
-            require(N > 0, ...
-                'ArgumentError: order should be > 0');
-            require(~mod(N,1), ...
-                'ArgumentError: order should be integer');
-            require(isnumeric([a b]), ...
-                'ArgumentError: interval [a b] should be numeric');
             N=N-1;
             N1=N+1; N2=N+2;
             xu=linspace(-1,1,N1)';
