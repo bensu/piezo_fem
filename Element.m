@@ -63,45 +63,19 @@ classdef Element
             % N = N(element,ksi,eta)
             % Element Shape Functions
             % Works by fetching them from EleType
-            require(isnumeric([ksi eta]), ...
-                'ArgumentError: Both ksi and eta should be numeric')
-            require(-1<=ksi && ksi<=1, ...
-                'ArgumetnError: ksi should be -1<=ksi<=1')
-            require(-1<=eta && eta<=1, ...
-                'ArgumetnError: eta should be -1<=eta<=1')
-            N = element.type.N(ksi,eta,zeta);
-%             switch element.type
-%                 case {EleType.Q4, EleType.AHMAD4}
-%                     N = EleType.N_Q4(ksi,eta);                                       
-%                 case {EleType.Q8,EleType.AHMAD8}
-%                     N = EleType.N_Q8(ksi,eta);
-%                 case {EleType.Q9,EleType.AHMAD9}
-%                     N = EleType.N_Q9(ksi,eta);
-%                 case {EleType.H8}
-%                     N = EleType.N_H8(ksi,eta,zeta);
-%             end
+            
+            % Maybe a varargin should be implemented to avoid passing zeta
+            % when element type is 2D.
+            if Element.parameters_check(ksi,eta,zeta)
+                N = element.type.N(ksi,eta,zeta);
+            end
         end
         function dN = dN(element,ksi,eta,zeta)
             % N = dN(element,ksi,eta)
             % Element Shape Functions Derivatives
             % Works by fetching them from EleType
-            require(isnumeric([ksi eta zeta]), ...
-                'ArgumentError: Both ksi and eta should be numeric')
-            require(-1<=ksi && ksi<=1, ...
-                'ArgumetnError: ksi should be -1<=ksi<=1')
-            require(-1<=eta && eta<=1, ...
-                'ArgumetnError: eta should be -1<=eta<=1')
-            require(-1<=zeta && zeta<=1, ...
-                'ArgumetnError: eta should be -1<=eta<=1')
-            switch element.type
-                case {EleType.Q4, EleType.AHMAD4}
-                    dN = EleType.dN_Q4(ksi,eta);
-                case {EleType.Q8,EleType.AHMAD8}
-                    dN = EleType.dN_Q8(ksi,eta);
-                case {EleType.Q9,EleType.AHMAD9}
-                    dN = EleType.dN_Q9(ksi,eta);
-                case {EleType.H8}
-                    dN = EleType.dN_H8(ksi,eta,zeta);
+            if Element.parameters_check(ksi,eta,zeta)
+                dN = element.type.dN(ksi,eta,zeta);
             end
         end
         function mu = mu_matrix(element)
@@ -171,6 +145,19 @@ classdef Element
                 i = index_range(dim,n);
                 NN(:,i) = N(n)*I;
             end
+        end
+        function bool = parameters_check(ksi,eta,zeta)
+            % Throws error if any paramter is off 
+            bool = false;
+            require(isnumeric([ksi eta zeta]), ...
+                'ArgumentError: Both ksi and eta should be numeric')
+            require(-1<=ksi && ksi<=1, ...
+                'ArgumetnError: ksi should be -1<=ksi<=1')
+            require(-1<=eta && eta<=1, ...
+                'ArgumetnError: eta should be -1<=eta<=1')
+            require(-1<=zeta && zeta<=1, ...
+                'ArgumetnError: zeta should be -1<=eta<=1')
+            bool = true;
         end
 
     end

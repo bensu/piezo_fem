@@ -6,22 +6,23 @@ classdef EleType
         dN
     end
     enumeration
-        Q4      (4,2,@EleType.N_Q4)
-        Q8      (8,3,@EleType.N_Q8)
-        Q9      (9,3,@EleType.N_Q9)
-        AHMAD4  (4,2,@EleType.N_Q4)
-        AHMAD8  (8,3,@EleType.N_Q8)
-        AHMAD9  (9,3,@EleType.N_Q9)
-        H8      (8,4,@EleType.N_H8)
+        Q4      (4,2,@EleType.N_Q4,@EleType.dN_Q4)
+        Q8      (8,3,@EleType.N_Q8,@EleType.dN_Q8)
+        Q9      (9,3,@EleType.N_Q9,@EleType.dN_Q9)
+        AHMAD4  (4,2,@EleType.N_Q4,@EleType.dN_Q4)
+        AHMAD8  (8,3,@EleType.N_Q8,@EleType.dN_Q8)
+        AHMAD9  (9,3,@EleType.N_Q9,@EleType.dN_Q9)
+        H8      (8,4,@EleType.N_H8,@EleType.dN_H8)
     end
     methods
-        function et = EleType(n_nodes,nodes_per_surface,N)
+        function et = EleType(n_nodes,nodes_per_surface,N,dN)
             % et = EleType(n_nodes,nodes_per_surface)
             % Initializer, should contain all the properties, for
             % enumeration
             et.n_nodes = n_nodes;
             et.nodes_per_surface = nodes_per_surface;
             et.N = N;
+            et.dN = dN;
         end
         function [surfaces, s_coord, s_values] = surfaces(ele_type)
             % [surfaces, s_directions, s_values] = surfaces(ele_type)
