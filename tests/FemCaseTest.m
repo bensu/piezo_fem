@@ -28,8 +28,8 @@ classdef FemCaseTest < matlab.unittest.TestCase
             n = 1;
             m = 2*n;
             mesh = Factory.ShellMesh(EleType.AHMAD8,[m,n],[a,b,t]);
-            material = Material(E,nu,rho);
-            K = @(element) Physics.K_Shell(element,material,3);
+            laminate = Laminate(Material(E,nu,rho),t);
+            K = @(element) Physics.K_Shell(element,laminate,3);
             physics = Physics(5,0,K);
             fem = FemCase(mesh,physics);
             
@@ -97,9 +97,9 @@ classdef FemCaseTest < matlab.unittest.TestCase
             % THIS MIGHT BREAK IF THE RESULTING NODE COORD ENDS UP IN A
             % STRANGE PLACE BECAUSE OF THE 1.1
             mesh.coords(inner_nodes(1),:) = mesh.coords(inner_nodes(1),:)*1.1;
-            material = Material(E,nu,rho);
+            laminate = Laminate(Material(E,nu,rho),t);
             % Create the FemCase
-            K = @(element) Physics.K_Shell(element,material,2);
+            K = @(element) Physics.K_Shell(element,laminate,2);
             physics = Physics(dofs_per_node,dofs_per_ele,K);
             fem = FemCase(mesh,physics);
             

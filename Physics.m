@@ -129,14 +129,14 @@ classdef Physics
                 ksi,eta,zeta));
             L = Integral.Volume3D(fun_in,order,[-1 1]);
         end
-        function M = M_Shell(element,material,order)
+        function M = M_Shell(element,laminate,order)
             % M = M_Shell(element,material,order)
             % M [n_dofxn_dof][Float] Mass as calculated in Cook 361 13.2-5
             % element [Element]: Requires methods jacobian and B
             % material[Material]: Requires property rho
             % order [Int]: Gauss integration order
-            rho = material.rho;
             function M_in_point = M_in_point(ksi,eta,zeta)
+                rho = laminate.material(zeta).rho;
                 jac = element.jacobian(ksi,eta,zeta);
                 N = element.ShellN(ksi,eta,zeta);
                 M_in_point = rho*(N')*N*det(jac);
@@ -144,14 +144,14 @@ classdef Physics
             fun_in = @(xi,eta,mu) (M_in_point(xi,eta,mu));
             M = Integral.Volume3D(fun_in,order,[-1 1]);
         end
-        function K = K_Shell(element,material,order)
+        function K = K_Shell(element,laminate,order)
             % K = K_Shell(element,material,order)
             % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
             % element [Element]: Requires methods jacobian and B
             % material[Material]: Requires properties E and nu
             % order [Int]: Gauss integration order
-            C = Physics.ElasticShell(material);
             function K_in_point = K_in_point(ksi,eta,zeta)
+                C = Physics.ElasticShell(laminate.material(zeta));
                 jac = element.jacobian(ksi,eta,zeta);
                 cosines = Element.direction_cosines(jac);
                 B = Element.T(cosines)* ...
@@ -161,7 +161,7 @@ classdef Physics
             fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
             K = Integral.Volume3D(fun_in,order,[-1 1]);
         end
-        function K = K_Shell_selective(element,material,normal_order,shear_order)
+        function K = K_Shell_selective(element,laminate,normal_order,shear_order)
             % K = K_Shell_selective(element,material,normal_order,shear_order)
             % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
             % with selective integration
@@ -169,22 +169,25 @@ classdef Physics
             % material[Material]: Requires methods E and nu
             % normal_order [Int]: Gauss integration order for normal part
             % shear_order  [Int]: Gauss integration order for shear part
-            C = Physics.ElasticShell(material);
-            function K_in_point = K_in_point(c_matrix,ksi,eta,zeta)
+            function K_in_point = K_in_point(normal_bool,ksi,eta,zeta)
+                C = Physics.ElasticShell(laminate.material(zeta));
+                if normal_bool
+                    C(1:3,1:3) = 0;
+                else
+                    C(4:5,4:5) = 0;
+                end
                 jac = element.jacobian(ksi,eta,zeta);
                 cosines = Element.direction_cosines(jac);
                 B = Element.T(cosines)* ...
                     Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
-                K_in_point = B'*c_matrix*B*det(jac);
+                K_in_point = B'*C*B*det(jac);
             end
-            % Shear part
-            C_shear = C;	C_shear(1:3,1:3) = 0;
-            fun_shear = @(xi,eta,mu) (K_in_point(C_shear,xi,eta,mu));
-            K_s = Integral.Volume3D(fun_shear,shear_order,[-1 1]);
-            % Transverse part
-            C_n = C;    C_n(4:5,4:5) = 0;
-            fun_n = @(xi,eta,mu) (K_in_point(C_n,xi,eta,mu));
+            % Normal Part
+            fun_n = @(xi,eta,mu) (K_in_point(true,xi,eta,mu));
             K_n = Integral.Volume3D(fun_n,normal_order,[-1 1]);
+            % Shear Part
+            fun_shear = @(xi,eta,mu) (K_in_point(false,xi,eta,mu));
+            K_s = Integral.Volume3D(fun_shear,shear_order,[-1 1]);
             K = K_s + K_n;
         end
         function C = Elastic(material)

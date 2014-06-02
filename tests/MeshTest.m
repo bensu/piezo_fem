@@ -3,11 +3,12 @@ classdef MeshTest < matlab.unittest.TestCase
         function AssemblyTest(testCase)
             % Tests the assembly function using on 2 elements checking
             % where are the dofs coupled
-            mesh = Factory.ShellMesh(EleType.AHMAD4,[2,1],[1,1,0.1]);
-            material = Material(1,0.3,1);
+            t = 0.1;
+            mesh = Factory.ShellMesh(EleType.AHMAD4,[2,1],[1,1,t]);
+            laminate = Laminate(Material(1,0.3,1),t);
             dofs_per_ele = 0;
             dofs_per_node = 5;
-            f = @(ele) Physics.K_Shell(ele,material,2);
+            f = @(ele) Physics.K_Shell(ele,laminate,2);
             S = mesh.assembly_matrix(dofs_per_node,dofs_per_ele,f);
             % Nodes 4 and 6 should not have any coupling
             dofs_4 = index_range(dofs_per_node,4);
@@ -24,11 +25,12 @@ classdef MeshTest < matlab.unittest.TestCase
         end
         function AssemblyBasicTest(testCase)
             % Tests the assembly function using only one element
-            mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[1,1,0.1]);
-            material = Material(1,0.3,1);
+            t = 0.1;
+            mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[1,1,t]);
+            laminate = Laminate(Material(1,0.3,1),t);
             dofs_per_ele = 0;
             dofs_per_node = 5;
-            f = @(ele) Physics.K_Shell(ele,material,2);
+            f = @(ele) Physics.K_Shell(ele,laminate,2);
             S = mesh.assembly_matrix(dofs_per_node,dofs_per_ele,f);
             K = f(mesh.ele(1));
             testCase.verifyEqual(true,near(norm(diag(K)),norm(diag(S))));

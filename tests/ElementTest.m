@@ -4,8 +4,8 @@ classdef ElementTest < matlab.unittest.TestCase
             a = 1;
             mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[a,a,a]);
             ele = mesh.ele(1);
-            material = Material(1,0.3,1);
-            K = Physics.K_Shell(ele,material,2);
+            laminate = Laminate(Material(1,0.3,1),a);
+            K = Physics.K_Shell(ele,laminate,2);
             is_symmetric = @(x) all(all(abs(x-x.')<1e-5));
             testCase.verifyEqual(true,is_symmetric(K));
         end

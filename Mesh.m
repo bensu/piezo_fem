@@ -18,9 +18,6 @@ classdef Mesh
         n_ele
         nodes_per_ele
     end
-    methods (Static)
-
-    end
     methods
         function obj = Mesh(ele_type,coords,connect,thickness_in)
             % obj = Mesh(coords,connect,node_normals)

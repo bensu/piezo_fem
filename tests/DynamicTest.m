@@ -23,9 +23,9 @@ classdef DynamicTest < matlab.unittest.TestCase
             dofs_per_ele = 0;
             n = 6;
             mesh = Factory.ShellMesh(EleType.AHMAD8,[2*n,n],[a,b,t]);
-            material = Material(E,nu,rho);
-            M = @(element) Physics.M_Shell(element,material,3);
-            K = @(element) Physics.K_Shell(element,material,3);
+            laminate = Laminate(Material(E,nu,rho),t);
+            M = @(element) Physics.M_Shell(element,laminate,3);
+            K = @(element) Physics.K_Shell(element,laminate,3);
             physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
             fem = FemCase(mesh,physics);
             
@@ -113,9 +113,9 @@ classdef DynamicTest < matlab.unittest.TestCase
             dofs_per_node = 5;
             dofs_per_ele = 0;
             mesh = Factory.ShellMesh(EleType.AHMAD8,[10,5],[a,b,t]);
-            material = Material(E,nu,rho);
-            M = @(element) Physics.M_Shell(element,material,3);
-            K = @(element) Physics.K_Shell(element,material,3);
+            laminate = Laminate(Material(E,nu,rho),t);
+            M = @(element) Physics.M_Shell(element,laminate,3);
+            K = @(element) Physics.K_Shell(element,laminate,3);
             physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
             fem = FemCase(mesh,physics);
             
@@ -149,9 +149,9 @@ classdef DynamicTest < matlab.unittest.TestCase
             dofs_per_node = 5;
             dofs_per_ele = 0;
             mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[a,b,t]);
-            material = Material(E,nu,rho);
-            M = @(element) Physics.M_Shell(element,material,3);
-            K = @(element) Physics.K_Shell(element,material,3);
+            laminate = Laminate(Material(E,nu,rho),t);
+            M = @(element) Physics.M_Shell(element,laminate,3);
+            K = @(element) Physics.K_Shell(element,laminate,3);
             physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
             fem = FemCase(mesh,physics);
             
