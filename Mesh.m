@@ -37,57 +37,61 @@ classdef Mesh
             obj.connect = connect;
             if EleType.is_shell(ele_type)
                 obj.normals = obj.nodal_systems();
+                obj.thickness = thickness_in;
             end
-            obj.thickness = thickness_in;
         end
         function nodal_systems = nodal_systems(mesh)
+            % nodal_systems = nodal_systems(mesh)
+            % nodal_systems [3x3xn_nodes]: One coordinate system per node
             % Shell specific
+            switch (mesh.ele_type)
+                case {EleType.AHMAD4}
+                    type = EleType.Q4;
+                case {EleType.AHMAD8}
+                    type = EleType.Q8;
+                case {EleType.AHMAD9}
+                    type = EleType.Q9;
+            end
             ksi = [ -1  1  1 -1  0  1  0 -1  0 ];
             eta = [ -1 -1  1  1 -1  0  1  0  0 ];
-            tol = 1e-9;
+            tol = 1e-9;     % Used for length comparisson
             nodal_systems = zeros(3,3,mesh.n_nodes);
             for n = 1:mesh.n_nodes
-                % ele:          Find the connect where the node is used
-                % localNode:    Find which node it represents to the element
-                [ele, localNode] = find(mesh.connect == n);
-                nuso = length(ele);     % Number of connect the node belongs to.
+                % eles:           Find the elements where the node is used
+                % local_index:    Find which node it represents to the element
+                [eles, local_index] = find(mesh.connect == n);
+                n_eles = length(eles);     % Number of connect the node belongs to.
                 % Loop through those connect to find v
-                v = zeros(nuso,3);      % Vector directions (v3) of the node in each element
-                switch (mesh.ele_type)
-                    case {EleType.AHMAD4}
-                        type = EleType.Q4;
-                    case {EleType.AHMAD8}
-                        type = EleType.Q8;
-                    case {EleType.AHMAD9}
-                        type = EleType.Q9;
-                end
-                for e = 1:nuso
+                v = zeros(n_eles,3);      % Vector directions (v3) of the node in each element
+                for e = 1:n_eles
                     % Create the element
-                    ele_nodes = mesh.connect(ele(e),:);
+                    ele_nodes = mesh.connect(eles(e),:);
                     ele_coords = mesh.coords(ele_nodes,:);
                     element = Element(1,type,ele_coords,[],[]);
                     
                     % Get 2D Jacobian of the element
-%                     dN = element.dN(ksi(localNode(e)),eta(localNode(e)));
-                    jac = element.jacobian(ksi(localNode(e)),eta(localNode(e)),0);
+                    % dN = element.dN(ksi(localNode(e)),eta(localNode(e)));
+                    jac = element.jacobian(ksi(local_index(e)),eta(local_index(e)),0);
                     
                     % Use the jacobian to get v3
                     v3 = cross(jac(1,:),jac(2,:));
                     v(e,:) = v3/norm(v3);
                 end
-                v3 = mean(v,1);
-                % from v3 get v1 and v2
-                v3 = v3'/norm(v3);
-                v1 = cross([0 1 0]',v3);
-                largo = norm(v1);
-                if largo > tol
-                    v1 = v1/largo;
+                aux_v3 = mean(v,1)';
+                % V1 and V2 are totally dependet on V3
+                % It is a choice to calculate them here and store them.
+                % They could easily be dependent properties form v3
+                v3 = aux_v3/norm(aux_v3);
+                v1_aux = cross([0 1 0]',v3);
+                v1_norm = norm(v1_aux);
+                if v1_norm > tol
+                    v1 = v1_aux/v1_norm;
                 else
                     v1 = [1 0 0]';
                 end
                 % v2 is orthogonal both to v1 and v3
-                v2 = cross(v3,v1);
-                v2 = v2/norm(v2);
+                v2_aux = cross(v3,v1);
+                v2 = v2_aux/norm(v2_aux);
                 % save v1 v2 and v3 in the global coords' directions
                 nodal_systems(:,:,n) = [v1 v2 v3];
             end

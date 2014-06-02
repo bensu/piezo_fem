@@ -147,7 +147,8 @@ classdef Element
             end
         end
         function bool = parameters_check(ksi,eta,zeta)
-            % Throws error if any paramter is off 
+            % Throws error if any paramter is off
+            % bool has no use.
             bool = false;
             require(isnumeric([ksi eta zeta]), ...
                 'ArgumentError: Both ksi and eta should be numeric')
