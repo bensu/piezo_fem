@@ -86,7 +86,7 @@ classdef FemCase < handle
                 LP = inv_P*LL;
                 DD(FF) = inv_P(FF,FF)*(SS(FF,FF) \ LP(FF));
                 % Change to true if output is wanted
-                if (true)
+                if (false)
                     condest(SS(FF,FF))
                     size(SS(FF,FF))
                     sprank(SS(FF,FF))
