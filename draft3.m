@@ -36,10 +36,10 @@ base = mesh.find_nodes(f_edge);
 fem.bc.node_vals.set_val(base,true);
 
 %% LOADS
-% All elements charged
-V = 1e-3;
-fem.loads.ele_vals.vals(:,1) = V;
-fem.loads.ele_vals.vals(:,2) = -V;
+% All elements charged, initial condition
+V = 1e-3/2;
+fem.initial_dis.ele_vals.vals(:,1) = V;
+fem.initial_dis.ele_vals.vals(:,2) = -V;
 
 %%
 
@@ -50,7 +50,4 @@ laminate.mat_num(-1)
 %%
 
 fem.solve
-u_max = max(fem.dis.node_vals.vals(:,1))
-v_min = min(fem.dis.node_vals.vals(:,2))
 w_max = max(abs(fem.dis.node_vals.vals(:,3)))
-V = fem.dis.ele_vals.vals(1,1)

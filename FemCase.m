@@ -11,6 +11,7 @@ classdef FemCase < handle
         physics
         loads
         bc
+        initial_dis
         dis
         reactions
     end
@@ -24,10 +25,11 @@ classdef FemCase < handle
             obj.physics = physics_in;
             % Create the rest of the Properties
             
-            obj.bc = obj.compound_function(false);
-            obj.loads = obj.compound_function(0);
-            obj.dis = obj.compound_function(0);
-            obj.reactions = obj.compound_function(0);
+            obj.bc          = obj.compound_function(false);
+            obj.loads       = obj.compound_function(0);
+            obj.initial_dis = obj.compound_function(0);
+            obj.dis         = obj.compound_function(0);
+            obj.reactions   = obj.compound_function(0);
         end
         function [V,D] = eigen_values(fem,mode_number)
             % [V,D] = eigen_values(fem,mode_number)
@@ -57,29 +59,48 @@ classdef FemCase < handle
                                          fem.physics.dofs_per_ele,  ...
                                          fem.physics.k);
             D = zeros(size(S,1),1);
+
+            I  = fem.initial_dis.non_zero_index;
+            if any(I)
+                ID = fem.initial_dis.all_dofs;
+                NI = ~I;
+                FF = F(NI);
+                DD = D(NI);
+                SS = S(NI,NI);
+                LL = L(NI) - S(NI,I)*ID(I);
+            else
+                FF = F;
+                DD = D;
+                SS = S;
+                LL = L;
+            end
             
             % For unit reasons (i.e. piezoelectric constant, some terms in 
             % the stiffness matrix (S) are several orders of magnitude 
             % larger than others. It is desirable to improve cond(S) before
             % solving the system.
-            if (condest(S(F,F)) > 1e8)
-                P = diag(sqrt(diag(S)));
+            if (condest(SS(FF,FF)) > 1e8)
+                P = diag(sqrt(diag(SS)));
                 inv_P = inv(P);
-                S_scaled = inv_P*S*inv_P;
-                L_scaled = inv_P*L;
-                D_scaled = S_scaled(F,F) \ L_scaled(F);
-                D(F) = inv_P(F,F)*D_scaled;
+                SS = inv_P'*SS*inv_P;
+                LP = inv_P*LL;
+                DD(FF) = inv_P(FF,FF)*(SS(FF,FF) \ LP(FF));
                 % Change to true if output is wanted
-                if (false)
-                    cond(S(F,F))
-                    cond(S_scaled(F,F))
-                    size(S_scaled(F,F))
-                    rank(S_scaled(F,F))
+                if (true)
+                    condest(SS(FF,FF))
+                    size(SS(FF,FF))
+                    sprank(SS(FF,FF))
                 end
             else
-                D(F) = S(F,F) \ L(F);
+            	DD(FF) = SS(FF,FF) \ LL(FF);
             end
-
+            
+            if any(I)
+                D(NI) = DD;
+                D(I)  = ID(I);
+            else 
+                D = DD;
+            end
             fem.dis.dof_list_in(D);
             fem.reactions.dof_list_in(S*D);
             edge = fem.mesh.find_nodes(@(x,y,z) (abs(x)<1e-5));

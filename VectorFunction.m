@@ -30,6 +30,11 @@ classdef VectorFunction < hgsetget
         function dofs_out = get.all_dofs(fun)
             dofs_out = reshape(fun.get('vals')',[],1);
         end
+        function dofs = non_zero_index(fun)
+            % dofs = non_zero_index(fun)
+            % Returns the logical index of all the values that are not zero
+            dofs = (fun.all_dofs ~= fun.zero_val);
+        end
         
         %% Edit
         function set_val(vf,places,value)

@@ -45,6 +45,12 @@ classdef CompoundFunction < hgsetget & handle
             compound.get('node_vals').clear
             compound.get('ele_vals').clear
         end
+        function dofs = non_zero_index(compound)
+            % dofs = non_zero_index(fun)
+            % Returns the logical index of all the values that are not zero
+            dofs = [compound.node_vals.non_zero_index
+                    compound.ele_vals.non_zero_index];
+        end
         
         %% Helpers
         function num = get.n_nodes(compound)
