@@ -127,7 +127,6 @@ classdef Mesh
             % fun_in follows convention [node_dofs ele_dofs]
             require(all(~mod([dofs_per_node,dofs_per_ele],1)), ...
                 'ArgumentError: dofs should be integers');
-            mesh.n_dofs(dofs_per_node,dofs_per_ele)
             L = sparse(mesh.n_dofs(dofs_per_node,dofs_per_ele),1);
             % Loop through elements
             for e = ele_ids

@@ -48,8 +48,7 @@ classdef PiezoTest < matlab.unittest.TestCase
             testCase.verifyTrue(near(expected_w,w_max))
         end
         function InPlanePatchTest(testCase)
-            % Uniform tension applied at edge x = a
-            
+            % Uniform traction applied at edge x = a
             %% Parameters
             s = 1e8;        % [Pa] Applied and expected tension
             E = 123e9;      % [Pa] Elastic Modulus
@@ -117,6 +116,8 @@ classdef PiezoTest < matlab.unittest.TestCase
             u_max = max(fem.dis.node_vals.vals(:,1));
             v_min = min(fem.dis.node_vals.vals(:,2));
             V = fem.dis.ele_vals.vals(1,1);
+            
+            
             
             %% Compare
             testCase.verifyTrue(near(expected_u,u_max))

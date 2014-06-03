@@ -63,25 +63,9 @@ classdef Physics
                 all_electric(e_index,e_index) = electric;
                 C = [   elastic     all_piezo';
                         all_piezo   all_electric];
+                %% B_matrix
+                B = Physics.B_PiezoShell(element,n_l,l,ksi,eta,zeta);
                 jac = element.jacobian(ksi,eta,zeta);
-                cosines = Element.direction_cosines(jac);
-                inv_jac = jac \ eye(3);
-                dof_per_layer = 1;
-                if dof_per_layer == 2
-                    dN_ele = zeros(3,2);
-                    % V_bottom is first, V_top goes second.
-                    % Together they form E_z = V_top - V_bottom
-                    dN_ele(3,:) = [-1 1];
-                else
-                    dN_ele = [0 0 1]';
-                    dN_xyz = inv_jac*dN_ele;
-                end
-                all_dN = zeros(n_l*size(dN_xyz));
-                all_dN(index_range(3,l),l) = cosines*dN_xyz;
-                % Mechanics Part
-                B_mech = Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
-                % Join both and trasform the coordinates
-                B = blkdiag(Element.T(cosines)*B_mech,all_dN);
                 K_in_point = B'*C*B*det(jac);
             end
             %% Generates gauss points for a series for zeta (with laminate) and ksi and eta
@@ -91,6 +75,27 @@ classdef Physics
             weights = {g_w,g_w,zeta_w'};
             fun_in = @(ksi,eta,zeta) (K_in_point(ksi,eta,zeta));
             K = Integral.quadrature(points,weights,fun_in);
+        end
+        function B = B_PiezoShell(element,dofs_per_ele,layer_num,ksi,eta,zeta)
+            jac = element.jacobian(ksi,eta,zeta);
+            cosines = Element.direction_cosines(jac);
+            inv_jac = jac \ eye(3);
+            dof_per_layer = 1;
+            if dof_per_layer == 2
+                dN_ele = zeros(3,2);
+                % V_bottom is first, V_top goes second.
+                % Together they form E_z = V_top - V_bottom
+                dN_ele(3,:) = [-1 1];
+            else
+                dN_ele = [0 0 1]';
+                dN_xyz = inv_jac*dN_ele;
+            end
+            all_dN = zeros(dofs_per_ele*size(dN_xyz));
+            all_dN(index_range(3,layer_num),layer_num) = cosines*dN_xyz;
+            % Mechanics Part
+            B_mech = Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
+            % Join both and trasform the coordinates
+            B = blkdiag(Element.T(cosines)*B_mech,all_dN);
         end
         function L = apply_surface_load(element,order,q,s_coord,s_val)
             % L = apply_load(element,order,q)
