@@ -46,7 +46,7 @@ classdef Integral
             dim   = size(points,2);  % Dimensions
             try_values  = cell(1,dim);
             for d = 1:dim
-                try_values{d}    = points{d}(1);
+                try_values{d} = points{d}(1);
             end
             %% Get all possible combinations of the points and weights
             % By having all the combinations in an explicit array form

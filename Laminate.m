@@ -10,6 +10,7 @@ classdef Laminate
         zeta_t      % Value of thickness distance in zeta coordinates, positive
         t_m         % 
         zeta_m
+        n_layers
     end
     methods 
         function obj = Laminate(mat_list,t_list)
@@ -29,8 +30,13 @@ classdef Laminate
             % mat_out [Material]: Corresponds to layer in location zeta
             % zeta [Float]: between -1 and 1, local coordinate
             % Maybe it should be a thickness value!
+            mat_out = lam.mat_list(lam.mat_num(zeta));            
+        end
+        function l = mat_num(lam,zeta)
+            % l = mat_num(lam,zeta)
+            % Finds the layer number that corresponds to zeta
             zeta_vals = lam.zeta_top;
-            mat_out = lam.mat_list(find(zeta <= zeta_vals,1,'last'));            
+            l = find(zeta <= zeta_vals,1,'first');
         end
         function [zeta_p, zeta_w] = quadrature(laminate,order)
             % [zeta_p, zeta_w] = quadrature(laminate,order)
@@ -80,6 +86,11 @@ classdef Laminate
             % t_m [n_layers x 1][Float]: Returns the location of each
             % layer's midsurface.
             t_m = lam.t_list/2 + cumsum(lam.t_list) - lam.t_list(1);
+        end
+        function n = get.n_layers(lam)
+            % n = get.n_layers(lam)
+            % Number of layers
+            n = length(lam.t_list);
         end
     end
 end

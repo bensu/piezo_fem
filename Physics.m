@@ -45,20 +45,29 @@ classdef Physics
             % Both material properties skip 3rd col because it is a plain
             % stress problem
             % Function to be integrated
+            n_l = laminate.n_layers;
             function K_in_point = K_in_point(ksi,eta,zeta)
                 % Piezo Part, generates the Electric Field (only z
                 % component from 2 or 1 voltage element dof.
-                material = laminate.material(zeta);
-                elastic = Physics.ElasticShell(material);
-                piezo = -material.D(:,[1 2 4 5 6]);  
-                electric = -diag(material.e);
-                C = [   elastic  piezo';
-                        piezo   electric];
+                %% Get Layer's contribution
+                layer = laminate.material(zeta);
+                l = laminate.mat_num(zeta);
+                elastic = Physics.ElasticShell(layer);
+                piezo = -layer.D(:,[1 2 4 5 6]);  
+                electric = -diag(layer.e);
+                %% Put the layer's electric contribution in the general matrix
+                all_piezo = zeros(n_l*size(piezo,1),size(piezo,2));
+                all_piezo(index_range(size(piezo,1),l),:) = piezo;
+                all_electric = zeros(size(electric,1)*n_l);
+                e_index = index_range(size(electric,2),l);
+                all_electric(e_index,e_index) = electric;
+                C = [   elastic     all_piezo';
+                        all_piezo   all_electric];
                 jac = element.jacobian(ksi,eta,zeta);
                 cosines = Element.direction_cosines(jac);
                 inv_jac = jac \ eye(3);
-                dof_per_ele = 1;
-                if dof_per_ele == 2
+                dof_per_layer = 1;
+                if dof_per_layer == 2
                     dN_ele = zeros(3,2);
                     % V_bottom is first, V_top goes second.
                     % Together they form E_z = V_top - V_bottom
@@ -67,14 +76,21 @@ classdef Physics
                     dN_ele = [0 0 1]';
                     dN_xyz = inv_jac*dN_ele;
                 end
+                all_dN = zeros(n_l*size(dN_xyz));
+                all_dN(index_range(3,l),l) = cosines*dN_xyz;
                 % Mechanics Part
                 B_mech = Physics.B_Shell(element,ksi,eta,zeta); % Cook [7.3-10]
                 % Join both and trasform the coordinates
-                B = blkdiag(Element.T(cosines)*B_mech,cosines*dN_xyz);
+                B = blkdiag(Element.T(cosines)*B_mech,all_dN);
                 K_in_point = B'*C*B*det(jac);
             end
-            fun_in = @(xi,eta,mu) (K_in_point(xi,eta,mu));
-            K = Integral.Volume3D(fun_in,order,-1,1);
+            %% Generates gauss points for a series for zeta (with laminate) and ksi and eta
+            [zeta_p, zeta_w] = laminate.quadrature(2);
+            [g_p,g_w] = Integral.lgwt(order,-1,1);
+            points  = {g_p,g_p,zeta_p'};
+            weights = {g_w,g_w,zeta_w'};
+            fun_in = @(ksi,eta,zeta) (K_in_point(ksi,eta,zeta));
+            K = Integral.quadrature(points,weights,fun_in);
         end
         function L = apply_surface_load(element,order,q,s_coord,s_val)
             % L = apply_load(element,order,q)
@@ -139,11 +155,15 @@ classdef Physics
             function M_in_point = M_in_point(ksi,eta,zeta)
                 rho = laminate.material(zeta).rho;
                 jac = element.jacobian(ksi,eta,zeta);
-                N = element.ShellN(ksi,eta,zeta);
+                N   = element.ShellN(ksi,eta,zeta);
                 M_in_point = rho*(N')*N*det(jac);
             end
+            [zeta_p, zeta_w] = laminate.quadrature(2);
+            [g_p,g_w] = Integral.lgwt(order,-1,1);
+            points  = {g_p,g_p,zeta_p'};
+            weights = {g_w,g_w,zeta_w'};
             fun_in = @(xi,eta,mu) (M_in_point(xi,eta,mu));
-            M = Integral.Volume3D(fun_in,order,-1,1);
+            M = Integral.quadrature(points,weights,fun_in);
         end
         function K = K_Shell(element,laminate,order)
             % K = K_Shell(element,material,order)
