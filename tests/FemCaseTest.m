@@ -5,11 +5,11 @@ classdef FemCaseTest < matlab.unittest.TestCase
             % Tests if the shells can accurately model a beam.
             %% PRELIMINARY ANALYSIS AND PARAMETERS 
             % Beam Theory analysis
-            a = 2;          % X Side length [m]
-            b = 0.5;       % Y Side length [m]
-            t = 0.1;        % Shell Thickness [m]
+            a = 0.24;          % X Side length [m]
+            b = 0.1;        % Y Side length [m]
+            t = 0.01;        % Shell Thickness [m]
             E = 2e7;        % Elasticity Modulus [Pa]
-            nu = 0;       % Poisson Coefficient
+            nu = 0;         % Poisson Coefficient
             rho = 1;        % Density [kg/m3]
             area = b*t;     % Area where Distributed Force is applied
             I = b*(t^3)/12; % Moment of Inertia of the loaded face

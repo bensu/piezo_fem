@@ -108,6 +108,7 @@ classdef FemCase < handle
             sum(abs(fem.reactions.node_vals.vals));
             sum(fem.loads.node_vals.vals);
         end
+        
         %% Wrappers
         function S = S(fem)
         % S = S(fem)

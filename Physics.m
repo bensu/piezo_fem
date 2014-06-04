@@ -49,22 +49,9 @@ classdef Physics
             function K_in_point = K_in_point(ksi,eta,zeta)
                 % Piezo Part, generates the Electric Field (only z
                 % component from 2 or 1 voltage element dof.
-                %% Get Layer's contribution
-                layer = laminate.material(zeta);
                 l = laminate.mat_num(zeta);
-                elastic = Physics.ElasticShell(layer);
-                piezo = -layer.D(:,[1 2 4 5 6]);  
-                electric = -diag(layer.e);
-                %% Put the layer's electric contribution in the general matrix
-                all_piezo = zeros(n_l*size(piezo,1),size(piezo,2));
-                all_piezo(index_range(size(piezo,1),l),:) = piezo;
-                all_electric = zeros(size(electric,1)*n_l);
-                e_index = index_range(size(electric,2),l);
-                all_electric(e_index,e_index) = electric;
-                C = [   elastic     all_piezo';
-                        all_piezo   all_electric];
-                %% B_matrix
-                B = Physics.B_PiezoShell(element,n_l,l,ksi,eta,zeta);
+                C = laminate.PiezoMatrix(zeta);
+                B = Physics.B_PiezoShell(element,n_l,l,ksi,eta,zeta); %% B_matrix
                 jac = element.jacobian(ksi,eta,zeta);
                 K_in_point = B'*C*B*det(jac);
             end

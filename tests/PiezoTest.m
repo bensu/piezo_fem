@@ -117,7 +117,17 @@ classdef PiezoTest < matlab.unittest.TestCase
             v_min = min(fem.dis.node_vals.vals(:,2));
             V = fem.dis.ele_vals.vals(1,1);
             
-            
+            %% Check Stresses and Strains (for Report)
+            ele_id = 1;
+            ele = mesh.ele(ele_id);
+            dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,ele_id);
+            D = fem.dis.all_dofs;
+            ele_dis = D(dofs);
+            B = Physics.B_PiezoShell(ele,laminate.n_layers,1,0,0,0);
+            C = laminate.PiezoMatrix(0);
+            format long
+            x;
+            B*ele_dis;
             
             %% Compare
             testCase.verifyTrue(near(expected_u,u_max))

@@ -25,6 +25,25 @@ classdef Laminate
         end
     end
     methods
+        function C = PiezoMatrix(lam,zeta)
+            % C = PiezoMatrix(lam,zeta)
+            % Get the constitutive matrix for a certain layer
+            % Get Layer's contribution
+            n_l = lam.n_layers;
+            layer = lam.material(zeta);
+            l = lam.mat_num(zeta);
+            elastic = Physics.ElasticShell(layer);
+            piezo = -layer.D(:,[1 2 4 5 6]);
+            electric = -diag(layer.e);
+            % Put the layer's electric contribution in the general matrix
+            all_piezo = zeros(n_l*size(piezo,1),size(piezo,2));
+            all_piezo(index_range(size(piezo,1),l),:) = piezo;
+            all_electric = zeros(size(electric,1)*n_l);
+            e_index = index_range(size(electric,2),l);
+            all_electric(e_index,e_index) = electric;
+            C = [   elastic     all_piezo';
+                all_piezo   all_electric];
+        end
         function mat_out = material(lam,zeta)
             % mat_out = material(lam,zeta)
             % mat_out [Material]: Corresponds to layer in location zeta
