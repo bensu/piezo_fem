@@ -129,9 +129,9 @@ classdef FemCase < handle
             obj = CompoundFunction(filler,fem.mesh.n_nodes, ...
             	fem.physics.dofs_per_node,fem.mesh.n_ele,fem.physics.dofs_per_ele);
         end
-        function plot(fem)
+        function plot(fem,scale)
             if ~isempty(fem.dis) && ~isempty(fem.reactions)
-                fem.mesh.plot_displacements(100,fem.dis.node_vals.vals(:,1:3))
+                fem.mesh.plot_displacements(scale,fem.dis.node_vals.vals(:,1:3))
                 hold on
                 fem.mesh.plot_vector_field( ...
                     fem.reactions.node_vals.vals(:,1:3),'k');
