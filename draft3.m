@@ -1,58 +1,50 @@
-%% Parameters
-a = 100e-3;             % [m] Beam's length
-b = 5e-3;               % [m] Beam's width
-t = 1e-3;               % [m] Beam's thickness
-E   = 2e9;              % [Pa] Elasticity Coefficient
-nu  = 0;                % Poisson coefficient
-rho = 1;                % [kg/m3] Density
-d13 = -0.046*(1e3);     % [(1e-3)C/m2] Piezo constant
-e3  = (1e3)*0.01062e-9; % [(1e-3)C/Nm2] Permitivity
-V = 1e-3;
-%% Expected Values
-% [Development of a Light-Weight Robot End-Effector using
-% Polymeric Piezoelectric Bimorph, Tzou, 1989][Eq 20]
-expected_w = -3*d13*V*(a^2)/(2*E*t^2);
-%% Geometry and Mesh
-mesh = Factory.ShellMesh(EleType.AHMAD8,[1,1],[a,b,t]);
-%% Laminate and Material
-piezo_matrix = zeros(3,6);
-piezo_matrix(3,1:3) = [d13 d13 0];
-pzt = Material.Piezo(E,nu,rho,piezo_matrix,[0 0 e3]);
-l = 0.5;
-laminate = Laminate([pzt, pzt],[l*t,(1-l)*t]);
-%% Physics and FEM
+% Long test. Should be turned off in everyday coding
+%% PRELIMINARY ANALYSIS AND PARAMETERS
+% Beam Theory analysis
+a = 0.5;    % X Side length [m]
+b = 0.05;   % Y Side length [m]
+t = 1e-3;   % Shell Thickness [m]
+E = 69e9;	% Elasticity Modulus [Pa]
+nu = 0.33;   % Poisson Coefficient
+rho = 2700;	% Density [kg/m3]
+A = b*t;        % Area [m2]
+I = b*(t^3)/12; % Second moment of Area [m4]
+
+% Expected Frequencies
+c = sqrt(E*I/(A*rho*a^4));
+lambda = [1.875,4.694,7.885]';
+beam_freq = @(L) ((lambda.^2)*sqrt(E*I/(A*rho*L^4))/(2*pi));
+expected_f = beam_freq(a)
+expected_f_400 = beam_freq(0.4);   % For Project Report
+expected_f_600 = beam_freq(0.6);
+
+%% FEM and MESH
+% Elements along the side
 dofs_per_node = 5;
-dofs_per_ele  = laminate.n_layers;
-gauss_order   = 2;
-K = @(element) Physics.K_PiezoShell(element,laminate,gauss_order);
-physics = Physics(dofs_per_node,dofs_per_ele,K);
+dofs_per_ele = 0;
+n = 10;
+m = 20;
+mesh = Factory.ShellMesh(EleType.AHMAD8,[m,n],[a,b,t]);
+laminate = Laminate(Material(E,nu,rho),t);
+M = @(element) Physics.M_Shell(element,laminate,3);
+K = @(element) Physics.K_Shell(element,laminate,3);
+physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
 fem = FemCase(mesh,physics);
+
 %% BC
+% Fixed End
 tol = 1e-9;
-% Clamped
-f_edge = (@(x,y,z) (abs(x) < tol));
-base = mesh.find_nodes(f_edge);
+x0_edge = (@(x,y,z) (abs(x) < tol));
+base = mesh.find_nodes(x0_edge);
 fem.bc.node_vals.set_val(base,true);
-%% Loads - Initial Displacements
-% All elements charged, initial condition
-fem.initial_dis.ele_vals.vals(:,1) = V/2;
-fem.initial_dis.ele_vals.vals(:,2) = -V/2;
-%% Solve
-fem.solve
 
-%% Check Stresses and Strains (for Report)
-ele_id = 1;
-ele = mesh.ele(ele_id);
-dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,ele_id);
-D = fem.dis.all_dofs;
-ele_dis = D(dofs);
-B = Physics.B_PiezoShell(ele,laminate.n_layers,1,0,0,-1);
-C = laminate.PiezoMatrix(0);
-format long
-C*B*ele_dis
-z = t/2;
-sigma_x_z = d13*V/(t^2)*z;
+%% Calculate Frequencies
+[Z, W] = fem.eigen_values(3);
+found_f = sqrt(diag(W))/(2*pi)
+error = abs(found_f(1) - expected_f(1)) / expected_f(1);
+% Error should be less than 5 percent
+%             testCase.verifyTrue(100*error < 5);
 
-%% Verify
-expected_w;
-w_max = max(abs(fem.dis.node_vals.vals(:,3)));
+%%  Plot modal shapes
+
+Z.node_vals.vals

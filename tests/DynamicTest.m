@@ -127,8 +127,8 @@ classdef DynamicTest < matlab.unittest.TestCase
             fem.bc.node_vals.set_val(base,true);
             
             %% Calculate Frequencies
-            [~, D] = fem.eigen_values(3);
-            found_f = sqrt(diag(D))/(2*pi);
+            [~, W] = fem.eigen_values(3);
+            found_f = sqrt(diag(W))/(2*pi)
             error = abs(found_f(1) - expected_f(1)) / expected_f(1);
             % Error should be less than 5 percent
             testCase.verifyTrue(100*error < 5);

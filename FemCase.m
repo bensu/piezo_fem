@@ -31,7 +31,7 @@ classdef FemCase < handle
             obj.dis         = obj.compound_function(0);
             obj.reactions   = obj.compound_function(0);
         end
-        function [V,D] = eigen_values(fem,mode_number)
+        function [Z,D] = eigen_values(fem,mode_number)
             % [V,D] = eigen_values(fem,mode_number)
             % Solves the eigen value problem for K and M.
             % V [n_dof x n_dof][Float]: Mode Shape Matrix
@@ -43,10 +43,12 @@ classdef FemCase < handle
             S = fem.S;
             M = fem.M;
             [V1,D] = eigs(S(F,F),M(F,F),mode_number,'SM');
-            V = fem.compound_function(0);
-            aux = V.all_dofs;
-            aux(F) = V1(:,3);
-            V.dof_list_in(aux);
+            Z = fem.compound_function_array(0,mode_number,1);
+            empty_dof_list = Z(1).all_dofs;
+            for n = 1:mode_number
+                empty_dof_list(F) = V1(:,n);
+                Z(2).dof_list_in(aux);
+            end
         end
         function solve(fem)
             % Side Effects
@@ -110,6 +112,19 @@ classdef FemCase < handle
         end
         
         %% Wrappers
+        function L = compound_function_array(fem,filler,n_row,n_col)
+            % L = compound_function_array(fem,filler,n_row,n_col)
+            % Creates an array of compound functions that match the dofs in
+            % the FemCase
+            % n_row: [Int]: Number of rows
+            % n_col: [Int]: Number of columns
+            L = CompoundFunction.empty(n_row,n_col);
+            for i = 1:n_row
+                for j = 1:n_col
+                    L(i,j) = fem.compound_function(filler);
+                end
+            end
+        end
         function S = S(fem)
         % S = S(fem)
         % Wrapper for Stiffness Matrix
