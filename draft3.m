@@ -1,3 +1,5 @@
+clear all
+clc
 %% PRELIMINARY ANALYSIS AND PARAMETERS
 % Beam Theory analysis
 a  = 0.5;        % X Side length [m]
@@ -56,13 +58,28 @@ beta  = 0.01;
 C = alpha*S + beta*M;
 
 %% EigenValues
+number_of_modes = 3;
 n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
-[V,S2] = eigs(S(F,F),M(F,F),3,'SM');
+[V,S2] = eigs(S(F,F),M(F,F),number_of_modes,'SM');
 S2 = diag(S2);
 M2 = diag(V'*M(F,F)*V);
 for i = 1:size(V,2)
     V(:,i) = V(:,i) / (norm(V(:,i))*sqrt(M2(i)));
 end
+C2 = diag(V'*C(F,F)*V);
+R2 = V'*R(F);
+
+
+%% Function handle for solver
+
+A = [   zeros(number_of_modes)    eye(number_of_modes);
+        -diag(S2)                           -diag(C2) ];
+B = [   zeros(number_of_modes,1); R2];
+    
+diff_z = @(t,z) (A*z + B);
+z0     = zeros(number_of_modes*2,1);
+[T,Z] = ode45(diff_z,[0 12],z0);
+plot(T,Z(:,1))
 
 %% Modal Decomposition
 dt = 5e-3;
@@ -70,19 +87,21 @@ dt = 5e-3;
 % S2 = diag(V'*S(F,F)*V);
 aux = V'*C(F,F)*V;
 aux(1,1)/(2*sqrt(S2(1,1)));
-C2 = diag(V'*C(F,F)*V)/(2*dt);
-R2 = V'*R(F);
+
 
 %% Time integration
-steps = 3000;
-Z = zeros(size(V,2),steps+1);
-time = linspace(0,dt*steps,steps+1);
-K2T = S2 - 2/(dt^2);
-MC1 = 1./(dt^-2 + C2);
-MC2 = dt^-2 - C2;
-for n = 2:steps
-    Z(:,n+1) = MC1.*(R2 - K2T.*Z(:,n) - MC2.*Z(:,n-1));
-end
+% steps = 3000;
+% C2 = diag(V'*C(F,F)*V)/(2*dt);
+% R2 = V'*R(F);
+% 
+% Z = zeros(size(V,2),steps+1);
+% time = linspace(0,dt*steps,steps+1);
+% K2T = S2 - 2/(dt^2);
+% MC1 = 1./(dt^-2 + C2);
+% MC2 = dt^-2 - C2;
+% for n = 2:steps
+%     Z(:,n+1) = MC1.*(R2 - K2T.*Z(:,n) - MC2.*Z(:,n-1));
+% end
 %% Rebuild D, final value
 D = fem.compound_function(0);
 aux = D.all_dofs;
