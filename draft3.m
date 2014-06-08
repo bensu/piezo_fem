@@ -8,7 +8,7 @@ nu = 0.3;         % Poisson Coefficient
 rho = 2700;     % Density [kg/m3]
 A = b*t;        % Area [m2]
 I = b*(t^3)/12; % Second moment of Area [m4]
-F = 1;
+F = 5e6;
 % Expected Frequencies
 c = sqrt(E*I/(A*rho*a^4));
 lambda = [1.875,4.694,7.885]';
@@ -60,14 +60,15 @@ end
 %% Modal Decomposition
 dt = 5e-3;
 R = fem.loads.all_dofs;
-C = sparse(eye(n_dofs)/10000);
+C = sparse((0.014/0.85e-3)*eye(n_dofs)/100000);
 S2 = diag(V'*S(F,F)*V);
 C2 = diag(V'*C(F,F)*V)/(2*dt);
 R2 = V'*R(F);
 
 %% Time integration
-steps = 300;
+steps = 3000;
 Z = zeros(size(V,2),steps+1);
+time = linspace(0,dt*steps,steps+1);
 K2T = S2 - 2/(dt^2);
 MC1 = 1./(dt^-2 + C2);
 MC2 = dt^-2 - C2;
@@ -77,7 +78,7 @@ end
 %% Rebuild D, final value
 D = fem.compound_function(0);
 aux = D.all_dofs;
-aux(F) = V*(Z(:,end));
+aux(F) = V*Z(:,end);
 D.dof_list_in(aux);
 dz = max(D.node_vals.vals(:,3));
 %% Static Solution
