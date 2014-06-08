@@ -48,10 +48,17 @@ fem.loads.node_vals.dof_list_in(L);
 F = ~fem.bc.all_dofs;
 S = fem.S;
 M = fem.M;
+R = fem.loads.all_dofs;
+
+%% Damping
+alpha = 0.0013;
+beta  = 0.01;
+C = alpha*S + beta*M;
 
 %% EigenValues
 n_dofs = mesh.n_dofs(dofs_per_node,dofs_per_ele);
-[V,D] = eigs(S(F,F),M(F,F),3,'SM');
+[V,S2] = eigs(S(F,F),M(F,F),3,'SM');
+S2 = diag(S2);
 M2 = diag(V'*M(F,F)*V);
 for i = 1:size(V,2)
     V(:,i) = V(:,i) / (norm(V(:,i))*sqrt(M2(i)));
@@ -59,9 +66,10 @@ end
 
 %% Modal Decomposition
 dt = 5e-3;
-R = fem.loads.all_dofs;
-C = sparse((0.014/0.85e-3)*eye(n_dofs)/100000);
-S2 = diag(V'*S(F,F)*V);
+
+% S2 = diag(V'*S(F,F)*V);
+aux = V'*C(F,F)*V;
+aux(1,1)/(2*sqrt(S2(1,1)));
 C2 = diag(V'*C(F,F)*V)/(2*dt);
 R2 = V'*R(F);
 
