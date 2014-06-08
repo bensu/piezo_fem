@@ -43,11 +43,11 @@ classdef FemCase < handle
             S = fem.S;
             M = fem.M;
             [V1,D] = eigs(S(F,F),M(F,F),mode_number,'SM');
-            Z = fem.compound_function_array(0,mode_number,1);
-            empty_dof_list = Z(1).all_dofs;
+            Z = fem.compound_function_array(0,mode_number);
+            dof_list = Z(1).all_dofs;   % Starts empty
             for n = 1:mode_number
-                empty_dof_list(F) = V1(:,n);
-                Z(2).dof_list_in(aux);
+                dof_list(F) = V1(:,n);  % Is filled
+                Z(n).dof_list_in(dof_list);
             end
         end
         function solve(fem)
@@ -112,17 +112,15 @@ classdef FemCase < handle
         end
         
         %% Wrappers
-        function L = compound_function_array(fem,filler,n_row,n_col)
+        function L = compound_function_array(fem,filler,n_row)
             % L = compound_function_array(fem,filler,n_row,n_col)
             % Creates an array of compound functions that match the dofs in
             % the FemCase
             % n_row: [Int]: Number of rows
             % n_col: [Int]: Number of columns
-            L = CompoundFunction.empty(n_row,n_col);
+            L = CompoundFunction.empty(n_row,0);
             for i = 1:n_row
-                for j = 1:n_col
-                    L(i,j) = fem.compound_function(filler);
-                end
+            	L(i) = fem.compound_function(filler);
             end
         end
         function S = S(fem)
