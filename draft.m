@@ -1,56 +1,51 @@
-clear all
-clc
 
-%% Represent a spring-mass system using shells
+%% PRELIMINARY ANALYSIS AND PARAMETERS
+% Beam Theory analysis
+a = 0.5;    % X Side length [m]
+b = 0.05;   % Y Side length [m]
+t = 1e-3;   % Shell Thickness [m]
+E = 69e9;	% Elasticity Modulus [Pa]
+nu = 0;   % Poisson Coefficient
+rho = 2700;	% Density [kg/m3]
+A = b*t;        % Area [m2]
+I = b*(t^3)/12; % Second moment of Area [m4]
 
-%% Parameters
-a = 1;
-L = 2;
-t = 1;
-E = 1;       % Elasticity Modulus [Pa]
-nu = 0;      % Poisson Coefficient
-rho = 0;     % Density [kg/m3]
-A = a*t;     % Area [m2]
-mass = 1;
-%% Expected Values
-k = E*A/L;
-expected_omega = sqrt(k/mass);
+% Expected Frequencies
+c = sqrt(E*I/(A*rho*a^4));
+lambda = [1.875,4.694,7.885]';
+expected_f = (lambda.^2)*c/(2*pi);
 
-%% FEM & Mesh
+%% MESH
+% Elements along the side
+laminate = Laminate(Material(E,nu,rho),t);
+mesh = Factory.ShellMesh(EleType.AHMAD8,laminate,[10,5],[a,b,t]);
+
+total_mass = 0.01;
+tol = 1e-9;
+between = @(a,b,x) ((x > a) && (x < b));
+f_acc = @(x,y,z) (between(0.35,0.45,x) && between(0.015,0.035,y));
+accelerometer_nodes = find(mesh.find_nodes(f_acc));
+mesh.coords(accelerometer_nodes)
+total_nodes = length(accelerometer_nodes);
+mass_values = total_mass*ones(total_nodes,1)/total_nodes;
+mesh = mesh.add_point_mass(accelerometer_nodes,mass_values);
+%% FEM
 dofs_per_node = 5;
 dofs_per_ele = 0;
-n = 6;
-mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[a,L,t]);
-
-% Add point mass
-tol = 1e-9;
-f_edge = @(x,y,z) (abs(y - L) < tol);
-edge_nodes = find(mesh.find_nodes(f_edge));
-mass_values = ones(size(edge_nodes));
-mass_values = mass*mass_values/sum(mass_values);
-mesh = mesh.add_point_mass(edge_nodes,mass_values);
-
-laminate = Laminate(Material(E,nu,rho),t);
-M = @(element) Physics.M_Shell(element,laminate,3);
-K = @(element) Physics.K_Shell(element,laminate,3);
+M = @(element) Physics.M_Shell(element,3);
+K = @(element) Physics.K_Shell(element,3);
 physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
 fem = FemCase(mesh,physics);
 
-%% Boundary Conditions
-% Restrict all non-y movement
-fem.bc.node_vals.vals(:,[1 3:end]) = true;
-f_clamped = @(x,y,z) (abs(y) < tol);
-clamped_noes = mesh.find_nodes(f_clamped);
-fem.bc.node_vals.set_val(clamped_noes,true);
+%% BC
+% Fixed End
+x0_edge = (@(x,y,z) (abs(x) < tol));
+base = mesh.find_nodes(x0_edge);
+fem.bc.node_vals.set_val(base,true);
 
-%% Dynamic Problem
-
-mode_number = 2;
-[Z,D] = fem.eigen_values(mode_number);
-omega = sqrt(diag(D))
-
-omega(1) - expected_omega(1)
-
-%%
-
-Z(1).node_vals.vals(:,2)
+%% Calculate Frequencies
+[~, W] = fem.eigen_values(3);
+found_f = sqrt(diag(W))/(2*pi)
+error = abs(found_f(1) - expected_f(1)) / expected_f(1);
+% Error should be less than 5 percent
+% testCase.verifyTrue(100*error < 5);
