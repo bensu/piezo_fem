@@ -15,14 +15,14 @@ classdef Factory
             thickness = sides(3)*ones(1,size(coords,1));
             mesh = Mesh(type,coords,connect,thickness);       
         end
-        function mesh = ShellMesh(type,n_elements,sides)
+        function mesh = ShellMesh(type,lam,n_elements,sides)
             % mesh = ShellMesh(n_elements,sides)
             % mesh [Mesh]: New Generated mesh
             % sides = [a,b,c] [1x3][Float]: sides of the shell 
             % n_elements = [m,n] [1x2][Int]: num of elements in each edge
             [coords, connect] = Factory.Plate(type,n_elements,sides);
             thickness = sides(3)*ones(1,size(coords,1));
-            mesh = Mesh(type,coords,connect,thickness);
+            mesh = Mesh(type,lam,coords,connect,thickness);
         end
         function [coords, connect, node_normals] = Shell(n_elements,sides)
             % mesh = ShellMesh(n_elements,sides,E,nu,rho)

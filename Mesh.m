@@ -11,6 +11,7 @@ classdef Mesh
         connect
         normals
         thickness
+        laminate_list
         ele_type
         nodes_with_mass
         mass_values
@@ -21,7 +22,7 @@ classdef Mesh
         nodes_per_ele
     end
     methods
-        function obj = Mesh(ele_type,coords,connect,thickness_in)
+        function obj = Mesh(ele_type,laminate,coords,connect,thickness_in)
             % obj = Mesh(coords,connect,node_normals)
             % Sanity Checks
             require(isnumeric(coords) && isnumeric(connect), ...
@@ -34,6 +35,7 @@ classdef Mesh
             obj.ele_type = ele_type;
             obj.coords = coords;
             obj.connect = connect;
+            obj.laminate_list = laminate;
             if EleType.is_shell(ele_type)
                 obj.normals = obj.nodal_systems();
                 obj.thickness = thickness_in;
@@ -66,7 +68,7 @@ classdef Mesh
                     % Create the element
                     ele_nodes = mesh.connect(eles(e),:);
                     ele_coords = mesh.coords(ele_nodes,:);
-                    element = Element(1,type,ele_coords,[],[]);
+                    element = Element(1,type,[],ele_coords,[],[]);
                     
                     % Get 2D Jacobian of the element
                     % dN = element.dN(ksi(localNode(e)),eta(localNode(e)));
@@ -114,9 +116,8 @@ classdef Mesh
                     end
                 end
             end
-            ele_fun = @(element) aux_fun(element);
             L = mesh.assembly_vector_along(dofs_per_node,dofs_per_ele, ...
-                                                        ele_ids,ele_fun);
+                                                        ele_ids,@aux_fun);
         end
         function L = assembly_vector_along(mesh,dofs_per_node,dofs_per_ele, ...
                 ele_ids,fun_in)
@@ -302,11 +303,18 @@ classdef Mesh
             % Create element with ID ele_id from the mesh
             nodes = mesh.ele_nodes(ele_id);
             if EleType.is_shell(mesh.ele_type)
-                ele = Element(ele_id,mesh.ele_type,mesh.coords(nodes,:), ...
-                    mesh.normals(:,:,nodes),mesh.thickness(nodes));
+                ele = Element(ele_id,mesh.ele_type,mesh.ele_laminate(ele_id), ...
+                    mesh.coords(nodes,:),mesh.normals(:,:,nodes),mesh.thickness(nodes));
             else
                 ele = Element(ele_id,mesh.ele_type,mesh.coords(nodes,:), ...
                                 [],[]);
+            end
+        end
+        function lam = ele_laminate(mesh,ele_id)
+            if length(mesh.laminate_list) == 1
+                lam = mesh.laminate_list;
+            else
+                lam = mesh.laminate_list(ele_id);
             end
         end
         function node_ids = ele_nodes(mesh,ele_id)

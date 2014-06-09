@@ -14,20 +14,21 @@ classdef PiezoTest < matlab.unittest.TestCase
             %% Expected Values
             % [Development of a Light-Weight Robot End-Effector using 
             % Polymeric Piezoelectric Bimorph, Tzou, 1989][Eq 20]
-            expected_w = -3*d13*V*(a^2)/(2*E*t^2);  
-            %% Geometry and Mesh
-            mesh = Factory.ShellMesh(EleType.AHMAD8,[1,1],[a,b,t]);
+            expected_w = -3*d13*V*(a^2)/(2*E*t^2); 
             %% Laminate and Material
             piezo_matrix = zeros(3,6);
             piezo_matrix(3,1:3) = [d13 d13 0];
             pzt = Material.Piezo(E,nu,rho,piezo_matrix,[0 0 e3]);
             l = 0.5;
             laminate = Laminate([pzt, pzt],[l*t,(1-l)*t]);
+            %% Geometry and Mesh
+            mesh = Factory.ShellMesh(EleType.AHMAD8,laminate,[1,1],[a,b,t]);
+            mesh.laminate_list = laminate;
             %% Physics and FEM
             dofs_per_node = 5;
             dofs_per_ele  = laminate.n_layers;
             gauss_order   = 2;
-            K = @(element) Physics.K_PiezoShell(element,laminate,gauss_order);
+            K = @(element) Physics.K_PiezoShell(element,gauss_order);
             physics = Physics(dofs_per_node,dofs_per_ele,K);
             fem = FemCase(mesh,physics);
             %% BC
@@ -76,15 +77,15 @@ classdef PiezoTest < matlab.unittest.TestCase
             expected_V = x(3)*t/2;  % Not clear why is the /2 needed
             
             %% FEM and MESH
-            mesh = Factory.ShellMesh(EleType.AHMAD4,[4,2],[a,b,t]);
             piezo_matrix = zeros(3,6);
             piezo_matrix(3,1:3) = [d13 d13 0];
             material = Material.Piezo(E,nu,rho,piezo_matrix,[0 0 e3]);
             laminate = Laminate(material,t);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,laminate,[4,2],[a,b,t]);
             % Create the FemCase
             dofs_per_node = 5;
             dofs_per_ele = 1;
-            K = @(element) Physics.K_PiezoShell(element,laminate,2);
+            K = @(element) Physics.K_PiezoShell(element,2);
             physics = Physics(dofs_per_node,dofs_per_ele,K);
             fem = FemCase(mesh,physics);
             

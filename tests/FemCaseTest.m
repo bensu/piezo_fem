@@ -21,16 +21,17 @@ classdef FemCaseTest < matlab.unittest.TestCase
             expected_dz     = M*(a^2)/(2*E*I);
             expected_phi    = -M*(a)/(E*I);
             
+            %% Material
+            material = Material(E,nu,rho);
+            laminate = Laminate([material material],[t/3 2*t/3]);
             %% FEM and MESH
             % Elements along the side
             dofs_per_node = 5;
             dofs_per_ele = 0;
             n = 1;
             m = 2*n;
-            mesh = Factory.ShellMesh(EleType.AHMAD8,[m,n],[a,b,t]);
-            material = Material(E,nu,rho);
-            laminate = Laminate([material material],[t/3 2*t/3]);
-            K = @(element) Physics.K_Shell(element,laminate,3);
+            mesh = Factory.ShellMesh(EleType.AHMAD8,laminate,[m,n],[a,b,t]);
+            K = @(element) Physics.K_Shell(element,3);
             physics = Physics(5,0,K);
             fem = FemCase(mesh,physics);
             
@@ -89,7 +90,8 @@ classdef FemCaseTest < matlab.unittest.TestCase
             dofs_per_node = 5;
             dofs_per_ele = 0;
             m = 2;
-            mesh = Factory.ShellMesh(EleType.AHMAD4,[m,m],[a,b,t]);
+            lam = Laminate(Material(E,nu,rho),t);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,lam,[m,m],[a,b,t]);
             % Break the symmetry
             tol = 1e-5;
             inner = @(x,y,z) (~(abs(x-a) < tol) && ~(abs(x) < tol) && ...
@@ -98,9 +100,8 @@ classdef FemCaseTest < matlab.unittest.TestCase
             % THIS MIGHT BREAK IF THE RESULTING NODE COORD ENDS UP IN A
             % STRANGE PLACE BECAUSE OF THE 1.1
             mesh.coords(inner_nodes(1),:) = mesh.coords(inner_nodes(1),:)*1.1;
-            laminate = Laminate(Material(E,nu,rho),t);
             % Create the FemCase
-            K = @(element) Physics.K_Shell(element,laminate,2);
+            K = @(element) Physics.K_Shell(element,2);
             physics = Physics(dofs_per_node,dofs_per_ele,K);
             fem = FemCase(mesh,physics);
             

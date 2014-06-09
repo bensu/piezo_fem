@@ -9,13 +9,14 @@ classdef Element
         coords      % [n_nodes x 3][Float]: Node coordinates, in order
         normals     % [n_nodes x 3][Float]: Node coordinate system - Shell only
         thickness   % [n_nodes x 1][Float]: Thickness at each node - Shell only
+        laminate    % [Laminate]
     end
     properties (Dependent)
         n_nodes     % [Int]: Number of nodes
         v3          % [3 x n_nodes]: Vector perpendicular to the shell at nodes - Shell only
     end
     methods
-        function obj = Element(id,type,coords,normals,t_in)
+        function obj = Element(id,type,laminate,coords,normals,t_in)
             % function obj = Element(type,coords,normals,t_in)
             % Creates an element object
             %             require(size(coords,1)==4, ...
@@ -27,6 +28,7 @@ classdef Element
             obj.thickness = t_in;
             obj.normals = normals;
             obj.type = type;
+            obj.laminate = laminate;
         end
         function jac = jacobian(element,ksi,eta,zeta)
             % jac_out = jacobian(element,ksi,eta,zeta)

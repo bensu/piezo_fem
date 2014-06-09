@@ -34,7 +34,7 @@ classdef Physics
             obj = Physics(dofs_per_node,dofs_per_ele,k);
             obj.m = m;            
         end
-        function K = K_PiezoShell(element,laminate,order)
+        function K = K_PiezoShell(element,order)
             % K = K_PiezoShell(element,material,order)
             % K [ele_dof x ele_dof][Float] Stiffness as calculated in
             % Cook 361 12.4-14
@@ -45,6 +45,7 @@ classdef Physics
             % Both material properties skip 3rd col because it is a plain
             % stress problem
             % Function to be integrated
+            laminate = element.laminate;
             n_l = laminate.n_layers;
             function K_in_point = K_in_point(ksi,eta,zeta)
                 % Piezo Part, generates the Electric Field (only z
@@ -138,12 +139,13 @@ classdef Physics
                 ksi,eta,zeta));
             L = Integral.Volume3D(fun_in,order,-1,1);
         end
-        function M = M_Shell(element,laminate,order)
+        function M = M_Shell(element,order)
             % M = M_Shell(element,material,order)
             % M [n_dofxn_dof][Float] Mass as calculated in Cook 361 13.2-5
             % element [Element]: Requires methods jacobian and B
             % material[Material]: Requires property rho
             % order [Int]: Gauss integration order
+            laminate = element.laminate;
             function M_in_point = M_in_point(ksi,eta,zeta)
                 rho = laminate.material(zeta).rho;
                 jac = element.jacobian(ksi,eta,zeta);
@@ -157,12 +159,13 @@ classdef Physics
             fun_in = @(xi,eta,mu) (M_in_point(xi,eta,mu));
             M = Integral.quadrature(points,weights,fun_in);
         end
-        function K = K_Shell(element,laminate,order)
+        function K = K_Shell(element,order)
             % K = K_Shell(element,material,order)
             % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
             % element [Element]: Requires methods jacobian and B
             % material[Material]: Requires properties E and nu
             % order [Int]: Gauss integration order
+            laminate = element.laminate;
             function K_in_point = K_in_point(ksi,eta,zeta)
                 C = Physics.ElasticShell(laminate.material(zeta));
                 jac = element.jacobian(ksi,eta,zeta);
@@ -179,7 +182,7 @@ classdef Physics
             fun_in = @(ksi,eta,zeta) (K_in_point(ksi,eta,zeta));
             K = Integral.quadrature(points,weights,fun_in);
         end
-        function K = K_Shell_selective(element,laminate,normal_order,shear_order)
+        function K = K_Shell_selective(element,normal_order,shear_order)
             % K = K_Shell_selective(element,material,normal_order,shear_order)
             % K [n_dofxn_dof][Float] Stiffness as calculated in Cook 361 12.4-14
             % with selective integration
@@ -187,6 +190,7 @@ classdef Physics
             % material[Material]: Requires methods E and nu
             % normal_order [Int]: Gauss integration order for normal part
             % shear_order  [Int]: Gauss integration order for shear part
+            laminate = element.laminate;
             function K_in_point = K_in_point(normal_bool,ksi,eta,zeta)
                 C = Physics.ElasticShell(laminate.material(zeta));
                 if normal_bool

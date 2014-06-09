@@ -8,9 +8,9 @@ a = 1;
 L = 2;
 t = 1;
 E = 1;       % Elasticity Modulus [Pa]
-nu = 0;         % Poisson Coefficient
+nu = 0;      % Poisson Coefficient
 rho = 0;     % Density [kg/m3]
-A = a*t;        % Area [m2]
+A = a*t;     % Area [m2]
 mass = 1;
 %% Expected Values
 k = E*A/L;
