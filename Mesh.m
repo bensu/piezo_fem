@@ -12,6 +12,8 @@ classdef Mesh
         normals
         thickness
         ele_type
+        nodes_with_mass
+        mass_values
     end
     properties (Dependent)
         n_nodes
@@ -134,6 +136,15 @@ classdef Mesh
                 dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,e);
                 L(dofs) = L(dofs) + fun_in(ele);
             end
+        end
+        function new_mesh = add_point_mass(mesh,nodes_with_mass,mass_values)
+            % add_point_mass(mesh,nodes_with_mass,mass_val)
+            % Getter
+            require(all(size(nodes_with_mass) == size(mass_values)), ...
+                'ArgumentError: nodes_with_mass and mass_val should be the same size');
+            mesh.nodes_with_mass = nodes_with_mass;
+            mesh.mass_values     = mass_values;
+            new_mesh = mesh;
         end
         function L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)
             % L = assembly_vector(mesh,dofs_per_node,dofs_per_ele,fun_in)

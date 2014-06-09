@@ -136,6 +136,16 @@ classdef FemCase < handle
             M = fem.mesh.assembly_matrix(fem.physics.dofs_per_node, ...
                 0,  ... %% HARDCODED for mechanical vibration
                 fem.physics.m);
+            %% Adds point masses if needed
+            if ~isempty(fem.mesh.nodes_with_mass)
+                for i = 1:length(fem.mesh.nodes_with_mass)
+                    n = fem.mesh.nodes_with_mass(i);
+                    m = fem.mesh.mass_values(i);
+                    n_dofs = fem.mesh.node_dofs(fem.physics.dofs_per_node,n);
+                    n_dofs = n_dofs(1:3);
+                    M(n_dofs,n_dofs) = M(n_dofs,n_dofs) + eye(3)*m;
+                end
+            end                
         end
         function obj = compound_function(fem,filler)
             % Wrapper for class CompoundFunction

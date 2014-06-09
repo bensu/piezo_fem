@@ -1,50 +1,56 @@
-d = -5;
-s = 1e8;
-E = 123e9;
-e = 12.5e-9;
-t = 0.01;
-a = 0.24;
+clear all
+clc
 
-B = [s 0 0]';
-A = [   E 0 -d;
-        0 E -d;
-        -d -d -e];
+%% Represent a spring-mass system using shells
 
-x = A \ B;
+%% Parameters
+a = 1;
+L = 2;
+t = 1;
+E = 1;       % Elasticity Modulus [Pa]
+nu = 0;         % Poisson Coefficient
+rho = 0;     % Density [kg/m3]
+A = a*t;        % Area [m2]
+mass = 1;
+%% Expected Values
+k = E*A/L;
+expected_omega = sqrt(k/mass);
 
-ux = x(1)*a
-V = t*x(3)/2
+%% FEM & Mesh
+dofs_per_node = 5;
+dofs_per_ele = 0;
+n = 6;
+mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[a,L,t]);
 
-%% Generate Mesh 1
+% Add point mass
+tol = 1e-9;
+f_edge = @(x,y,z) (abs(y - L) < tol);
+edge_nodes = find(mesh.find_nodes(f_edge));
+mass_values = ones(size(edge_nodes));
+mass_values = mass*mass_values/sum(mass_values);
+mesh = mesh.add_point_mass(edge_nodes,mass_values);
 
-a = 0.24;
-b = 0.12;
-t = 0.01;
+laminate = Laminate(Material(E,nu,rho),t);
+M = @(element) Physics.M_Shell(element,laminate,3);
+K = @(element) Physics.K_Shell(element,laminate,3);
+physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
+fem = FemCase(mesh,physics);
 
-mesh = Factory.ShellMesh('AHMAD4',[4,2],[a,b,t]);
+%% Boundary Conditions
+% Restrict all non-y movement
+fem.bc.node_vals.vals(:,[1 3:end]) = true;
+f_clamped = @(x,y,z) (abs(y) < tol);
+clamped_noes = mesh.find_nodes(f_clamped);
+fem.bc.node_vals.set_val(clamped_noes,true);
 
-%% Generate Mesh 2
-coords = [ 0.04 0.02    0;
-           0.08 0.08    0;
-           0.18 0.03    0;
-           0.16 0.08    0;
-           0    0       0;
-           0    b       0;
-           a    0       0;
-           a    b       0];
+%% Dynamic Problem
 
-connect = [ 5 1 2 6;
-            5 7 3 1;
-            1 3 4 2;
-            6 2 4 8;
-            7 8 4 3];
+mode_number = 2;
+[Z,D] = fem.eigen_values(mode_number);
+omega = sqrt(diag(D))
 
-n_node = size(coords,1);
-thickness = t*ones(1,n_node);
-mesh2 = Mesh('AHMAD4',coords,connect,thickness);
+omega(1) - expected_omega(1)
 
-%% Compare
+%%
 
-a1 = mesh.nodes_per_ele
-a2 = mesh2.nodes_per_ele
-
+Z(1).node_vals.vals(:,2)
