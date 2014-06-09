@@ -16,8 +16,8 @@ run(femcase_suite)
 piezo_suite = PiezoTest;
 run(piezo_suite)
 
-% mass_suite = DynamicTest;
-% run(mass_suite)
+mass_suite = DynamicTest;
+run(mass_suite)
 
 laminate_suite = LaminateTest;
 run(laminate_suite)

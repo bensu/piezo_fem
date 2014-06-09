@@ -17,9 +17,10 @@ classdef DynamicTest < matlab.unittest.TestCase
             k = E*A/L;
             expected_omega = sqrt(k/mass);
             %% FEM & Mesh
+            laminate = Laminate(Material(E,nu,rho),t);
             dofs_per_node = 5;
             dofs_per_ele = 0;
-            mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[a,L,t]);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,laminate,[1,1],[a,L,t]);
             % Add point mass
             tol = 1e-9;
             f_edge = @(x,y,z) (abs(y - L) < tol);
@@ -27,9 +28,8 @@ classdef DynamicTest < matlab.unittest.TestCase
             mass_values = ones(size(edge_nodes));
             mass_values = mass*mass_values/sum(mass_values);
             mesh = mesh.add_point_mass(edge_nodes,mass_values);
-            laminate = Laminate(Material(E,nu,rho),t);
-            M = @(element) Physics.M_Shell(element,laminate,3);
-            K = @(element) Physics.K_Shell(element,laminate,3);
+            M = @(element) Physics.M_Shell(element,3);
+            K = @(element) Physics.K_Shell(element,3);
             physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
             fem = FemCase(mesh,physics);
             %% Boundary Conditions
@@ -64,13 +64,13 @@ classdef DynamicTest < matlab.unittest.TestCase
             
             %% FEM and MESH
             % Elements along the side
+            laminate = Laminate(Material(E,nu,rho),t);
             dofs_per_node = 5;
             dofs_per_ele = 0;
             n = 6;
-            mesh = Factory.ShellMesh(EleType.AHMAD8,[2*n,n],[a,b,t]);
-            laminate = Laminate(Material(E,nu,rho),t);
-            M = @(element) Physics.M_Shell(element,laminate,3);
-            K = @(element) Physics.K_Shell(element,laminate,3);
+            mesh = Factory.ShellMesh(EleType.AHMAD8,laminate,[2*n,n],[a,b,t]);
+            M = @(element) Physics.M_Shell(element,3);
+            K = @(element) Physics.K_Shell(element,3);
             physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
             fem = FemCase(mesh,physics);
             
@@ -155,12 +155,12 @@ classdef DynamicTest < matlab.unittest.TestCase
             
             %% FEM and MESH
             % Elements along the side
+            laminate = Laminate(Material(E,nu,rho),t);
             dofs_per_node = 5;
             dofs_per_ele = 0;
-            mesh = Factory.ShellMesh(EleType.AHMAD8,[10,5],[a,b,t]);
-            laminate = Laminate(Material(E,nu,rho),t);
-            M = @(element) Physics.M_Shell(element,laminate,3);
-            K = @(element) Physics.K_Shell(element,laminate,3);
+            mesh = Factory.ShellMesh(EleType.AHMAD8,laminate,[10,5],[a,b,t]);
+            M = @(element) Physics.M_Shell(element,3);
+            K = @(element) Physics.K_Shell(element,3);
             physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
             fem = FemCase(mesh,physics);
             
@@ -193,10 +193,10 @@ classdef DynamicTest < matlab.unittest.TestCase
             % Elements along the side
             dofs_per_node = 5;
             dofs_per_ele = 0;
-            mesh = Factory.ShellMesh(EleType.AHMAD4,[1,1],[a,b,t]);
             laminate = Laminate(Material(E,nu,rho),t);
-            M = @(element) Physics.M_Shell(element,laminate,3);
-            K = @(element) Physics.K_Shell(element,laminate,3);
+            mesh = Factory.ShellMesh(EleType.AHMAD4,laminate,[1,1],[a,b,t]);
+            M = @(element) Physics.M_Shell(element,3);
+            K = @(element) Physics.K_Shell(element,3);
             physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
             fem = FemCase(mesh,physics);
             

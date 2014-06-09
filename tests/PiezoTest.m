@@ -23,7 +23,6 @@ classdef PiezoTest < matlab.unittest.TestCase
             laminate = Laminate([pzt, pzt],[l*t,(1-l)*t]);
             %% Geometry and Mesh
             mesh = Factory.ShellMesh(EleType.AHMAD8,laminate,[1,1],[a,b,t]);
-            mesh.laminate_list = laminate;
             %% Physics and FEM
             dofs_per_node = 5;
             dofs_per_ele  = laminate.n_layers;
