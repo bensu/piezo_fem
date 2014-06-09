@@ -246,7 +246,7 @@ classdef Mesh
         function dofs = all_eles_dofs(mesh,dofs_per_node,dofs_per_ele,ele_id)
             % eles_dofs(mesh,dofs_per_node,dofs_per_ele,ele_id)
             % Computes the complete Dof list for a certain element
-            node_dofs = mesh.node_dofs(dofs_per_node,ele_id);
+            node_dofs = mesh.ele_node_dofs(dofs_per_node,ele_id);
             ele_dofs = mesh.eles_dofs(dofs_per_node,dofs_per_ele,ele_id);
             dofs = [node_dofs; ele_dofs];
         end
@@ -257,8 +257,8 @@ classdef Mesh
             dofs = mesh.last_node_dof(dofs_per_node) + ...
                 index_range(dofs_per_ele,ele_id)';
         end
-        function dofs = node_dofs(mesh,dofs_per_node,ele_id)
-            % dofs = node_dofs(mesh,dofs_per_node,ele_id)
+        function dofs = ele_node_dofs(mesh,dofs_per_node,ele_id)
+            % dofs = ele_node_dofs(mesh,dofs_per_node,ele_id)
             % Finds the dofs that correspond only to the nodes of the
             % element
             nodes = mesh.ele_nodes(ele_id);
@@ -266,8 +266,13 @@ classdef Mesh
             dofs = zeros(mesh.nodes_per_ele*dofs_per_node,1);
             for i = 1:mesh.nodes_per_ele
                 dofs(index_range(dofs_per_node,i)) = ... 
-                    index_range(dofs_per_node,nodes(i));
+                    mesh.node_dofs(dofs_per_node,nodes(i));
             end
+        end
+        function dofs = node_dofs(mesh,dofs_per_node,node_id)
+            % dofs = node_dofs(mesh,dofs_per_node,node_id)
+            % Finds the dofs that correspond only to the node_id
+            dofs = index_range(dofs_per_node,node_id);
         end
         function out = n_dofs(mesh,dofs_per_node,dofs_per_ele)
             % out = n_dofs(mesh,dofs_per_node,dofs_per_ele)

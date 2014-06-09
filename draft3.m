@@ -53,8 +53,8 @@ M = fem.M;
 R = fem.loads.all_dofs;
 
 %% Damping
-alpha = 0.0013;
-beta  = 0.01;
+alpha = 0.0012;     % Return 0.0137 for damping_first_mode
+beta  = 0.05; 
 C = alpha*S + beta*M;
 
 %% EigenValues
@@ -69,16 +69,17 @@ end
 C2 = diag(V'*C(F,F)*V);
 R2 = V'*R(F);
 
+Z0 = R2 ./ S2;
 
 %% Function handle for solver
 
 A = [   zeros(number_of_modes)    eye(number_of_modes);
         -diag(S2)                           -diag(C2) ];
-B = [   zeros(number_of_modes,1); R2];
+B = zeros(number_of_modes*2,1);
     
 diff_z = @(t,z) (A*z + B);
 z0     = zeros(number_of_modes*2,1);
-[T,Z] = ode45(diff_z,[0 12],z0);
+[T,Z] = ode45(diff_z,[0 12],[Z0 ; zeros(number_of_modes,1)]);
 plot(T,Z(:,1))
 
 %% Modal Decomposition
@@ -86,28 +87,21 @@ dt = 5e-3;
 
 % S2 = diag(V'*S(F,F)*V);
 aux = V'*C(F,F)*V;
-aux(1,1)/(2*sqrt(S2(1,1)));
+damping_first_mode = aux(1,1)/(2*sqrt(S2(1,1)))
 
+%% Rebuild w(t) for one node
 
-%% Time integration
-% steps = 3000;
-% C2 = diag(V'*C(F,F)*V)/(2*dt);
-% R2 = V'*R(F);
-% 
-% Z = zeros(size(V,2),steps+1);
-% time = linspace(0,dt*steps,steps+1);
-% K2T = S2 - 2/(dt^2);
-% MC1 = 1./(dt^-2 + C2);
-% MC2 = dt^-2 - C2;
-% for n = 2:steps
-%     Z(:,n+1) = MC1.*(R2 - K2T.*Z(:,n) - MC2.*Z(:,n-1));
-% end
+node_id = border(1);
+node_dofs = mesh.node_dofs(dofs_per_node,node_id);
+w_t = V(node_dofs(3),:)*Z(:,1:3)';
+plot(T,w_t)
+
 %% Rebuild D, final value
 D = fem.compound_function(0);
 aux = D.all_dofs;
-aux(F) = V*Z(:,end);
+aux(F) = V*Z(1,1:3)';
 D.dof_list_in(aux);
-dz = max(D.node_vals.vals(:,3));
+dz = max(abs(D.node_vals.vals(:,3)));
 %% Static Solution
 fem.solve();
 max_dz = max(fem.dis.node_vals.vals(:,3));
