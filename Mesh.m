@@ -406,6 +406,11 @@ classdef Mesh
                 text(sum(X(:,n))/4,sum(Y(:,n))/4,sum(Z(:,n))/4,int2str(n), ...
                                                 'fontsize',10,'color','r') ;
             end
+            if ~isempty(mesh.nodes_with_mass)
+                nodes = mesh.nodes_with_mass;
+                plot3(mesh.coords(nodes,1),mesh.coords(nodes,2), ...
+                                        mesh.coords(nodes,3),'go')
+            end
             hold off
         end
         function plot_displacements(mesh,scale,displacements)

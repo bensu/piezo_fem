@@ -20,12 +20,11 @@ expected_f = (lambda.^2)*c/(2*pi);
 laminate = Laminate(Material(E,nu,rho),t);
 mesh = Factory.ShellMesh(EleType.AHMAD8,laminate,[10,5],[a,b,t]);
 
-total_mass = 0.01;
+total_mass = 0.001;
 tol = 1e-9;
-between = @(a,b,x) ((x > a) && (x < b));
-f_acc = @(x,y,z) (between(0.35,0.45,x) && between(0.015,0.035,y));
+between = @(a,b,x) ((x >= a) && (x <= b));
+f_acc = @(x,y,z) (between(0.38,0.45,x) && between(0.02,0.03,y));
 accelerometer_nodes = find(mesh.find_nodes(f_acc));
-mesh.coords(accelerometer_nodes)
 total_nodes = length(accelerometer_nodes);
 mass_values = total_mass*ones(total_nodes,1)/total_nodes;
 mesh = mesh.add_point_mass(accelerometer_nodes,mass_values);
@@ -42,6 +41,8 @@ fem = FemCase(mesh,physics);
 x0_edge = (@(x,y,z) (abs(x) < tol));
 base = mesh.find_nodes(x0_edge);
 fem.bc.node_vals.set_val(base,true);
+
+mesh.plot()
 
 %% Calculate Frequencies
 [~, W] = fem.eigen_values(3);

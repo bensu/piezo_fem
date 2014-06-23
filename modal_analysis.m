@@ -25,10 +25,11 @@ dofs_per_node = 5;
 dofs_per_ele = 0;
 n = 10;
 m = 20;
-mesh = Factory.ShellMesh(EleType.AHMAD8,[m,n],[a,b,t]);
-laminate = Laminate(Material(E,nu,rho),t);
-M = @(element) Physics.M_Shell(element,laminate,3);
-K = @(element) Physics.K_Shell(element,laminate,3);
+lam = Laminate(Material(E,nu,rho),t);
+mesh = Factory.ShellMesh(EleType.AHMAD8,lam,[m,n],[a,b,t]);
+
+M = @(element) Physics.M_Shell(element,3);
+K = @(element) Physics.K_Shell(element,3);
 physics = Physics.Dynamic(dofs_per_node,dofs_per_ele,K,M);
 fem = FemCase(mesh,physics);
 
@@ -63,3 +64,12 @@ for n = 1:number_of_modes
     legend('Normalized EigenVector','Beam Shape Function');
     hold off
 end
+
+%% Antinode for mode 2
+bs = beam_shapes(a,2,x_coords);
+index = find(x_coords>0.2);
+[min_bs,l] = min(abs(bs(index)));
+hold on
+plot(x_coords,bs)
+plot(x_coords(index(l)),bs(index(l)),'o')
+hold off
