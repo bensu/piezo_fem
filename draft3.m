@@ -52,7 +52,7 @@ n = 8;
 mesh = Factory.ShellMesh(EleType.AHMAD8,al_layer,[2*n,n],[a,b,t_al]);
 
 % Assign the Laminates to the elements.
-stripe_length = 60e-3;
+stripe_length = 70e-3;
 stripe_start   = 30e-3;
 f_in_stripe = @(x,y,z) ((x > stripe_start) && (x < stripe_length + stripe_start));
 in_stripe_n = find(mesh.find_nodes(f_in_stripe));
@@ -78,10 +78,10 @@ for i = 1:length(ele_ids)
         pzt_eles = [pzt_eles ele_ids(i)];
     end
 end
-laminates = Laminate.empty(mesh.n_ele,0);
-laminates(1:end) = al_layer;
-laminates(pzt_eles) = composite;
-mesh.mat_list = laminates;
+
+mesh.laminate_ids(1:end) = 1;
+mesh.laminate_ids(pzt_eles) = 2;
+mesh.laminates = [al_layer,composite];
 mesh.plot();
 
 M = @(element) Physics.M_Shell(element,3);

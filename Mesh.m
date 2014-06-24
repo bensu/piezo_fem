@@ -397,8 +397,11 @@ classdef Mesh
             X = zeros(nodes_per_ele,mesh.n_ele); 
             Y = zeros(nodes_per_ele,mesh.n_ele); 
             Z = zeros(nodes_per_ele,mesh.n_ele);
+            C = char(mesh.n_ele,1);
+            cc = ['w','g'];
             for e = 1:mesh.n_ele
                 e_nodes = mesh.ele_nodes(e);    % nodes for ele with id = e
+                C(e) = cc(mesh.laminate_ids(e));
                 for n = 1:nodes_per_ele
                     X(n,e) = mesh.coords(e_nodes(n),1); % extract x value of the node
                     Y(n,e) = mesh.coords(e_nodes(n),2); % extract y value of the node
@@ -408,8 +411,10 @@ classdef Mesh
             % Plotting the FEM mesh, diaplay Node numbers and Element numbers
             f1 = figure ;
             set(f1,'name','Mesh','numbertitle','off') ;
-            patch(X,Y,Z,'w');
             hold on
+            for e = 1:mesh.n_ele
+                patch(X(:,e),Y(:,e),Z(:,e),C(e));
+            end
             e_nodes = mesh.connect(:,1:end)';
             for n = 1:mesh.n_ele
                 text(X(:,n),Y(:,n),Z(:,n),int2str(e_nodes(1:4,n)), ...
