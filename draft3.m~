@@ -50,7 +50,7 @@ n = 8;
 
 % Start the mesh with aluminum, then correct it
 mesh = Factory.ShellMesh(EleType.AHMAD8,al_layer,[2*n,n],[a,b,t_al]);
-
+mesh.plot()
 % Assign the Laminates to the elements.
 stripe_length = 60e-3;
 stripe_start   = 30e-3;
@@ -65,24 +65,10 @@ for i = 1:length(in_stripe_n)
 end
 ele_ids = unique(ele_ids);
 % Filter elements. Must have at least 6 nodes
-pzt_eles = [];
 for i = 1:length(ele_ids)
-    ele_nodes = mesh.ele_nodes(ele_ids(i));
-    node_count = 0;
-    for j = 1:length(ele_nodes)
-        if any(in_stripe_n == ele_nodes(j))
-            node_count = node_count + 1;
-        end
-    end
-    if node_count >= 6
-        pzt_eles = [pzt_eles ele_ids(i)];
-    end
+    ele_nodes =mesh.ele_nodes(ele_ids(i));
 end
-laminates = Laminate.empty(mesh.n_ele,0);
-laminates(1:end) = al_layer;
-laminates(pzt_eles) = composite;
-mesh.mat_list = laminates;
-mesh.plot();
+
 
 M = @(element) Physics.M_Shell(element,3);
 K = @(element) Physics.K_Shell(element,3);

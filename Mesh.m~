@@ -11,8 +11,7 @@ classdef Mesh
         connect
         normals
         thickness
-        laminate_ids
-        laminates
+        laminate_list
         ele_type
         nodes_with_mass
         mass_values
@@ -23,7 +22,7 @@ classdef Mesh
         nodes_per_ele
     end
     methods
-        function obj = Mesh(ele_type,laminates,laminate_ids,coords,connect,thickness_in)
+        function obj = Mesh(ele_type,laminate,coords,connect,thickness_in)
             % obj = Mesh(coords,connect,node_normals)
             % Sanity Checks
             require(isnumeric(coords) && isnumeric(connect), ...
@@ -36,14 +35,7 @@ classdef Mesh
             obj.ele_type = ele_type;
             obj.coords = coords;
             obj.connect = connect;
-            obj.laminates = laminates;
-            if isempty(laminate_ids)
-                obj.laminate_ids = ones(size(connect,1),1);
-            else
-                require(length(laminate_ids)==size(connect,1), ...
-                    'ArgumentError: length(laminate_ids) should = size(connect,2)');
-                obj.laminate_ids = laminate_ids;
-            end
+            obj.laminate_list = laminate;
             if EleType.is_shell(ele_type)
                 obj.normals = obj.nodal_systems();
                 obj.thickness = thickness_in;
@@ -313,8 +305,7 @@ classdef Mesh
             % Create element with ID ele_id from the mesh
             nodes = mesh.ele_nodes(ele_id);
             if EleType.is_shell(mesh.ele_type)
-                laminate = mesh.laminates(mesh.laminate_ids(ele_id));
-                ele = Element(ele_id,mesh.ele_type,laminate, ...
+                ele = Element(ele_id,mesh.ele_type,mesh.ele_laminate(ele_id), ...
                     mesh.coords(nodes,:),mesh.normals(:,:,nodes),mesh.thickness(nodes));
             else
                 ele = Element(ele_id,mesh.ele_type,mesh.coords(nodes,:), ...
@@ -398,6 +389,7 @@ classdef Mesh
             Y = zeros(nodes_per_ele,mesh.n_ele); 
             Z = zeros(nodes_per_ele,mesh.n_ele);
             for e = 1:mesh.n_ele
+                C(e) = 
                 e_nodes = mesh.ele_nodes(e);    % nodes for ele with id = e
                 for n = 1:nodes_per_ele
                     X(n,e) = mesh.coords(e_nodes(n),1); % extract x value of the node
