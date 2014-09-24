@@ -79,10 +79,21 @@ for i = 1:length(ele_ids)
     end
 end
 
-mesh.laminate_ids(1:end) = 1;
+mesh.laminate_ids(1:end)    = 1;
 mesh.laminate_ids(pzt_eles) = 2;
 mesh.laminates = [al_layer,composite];
+
+%% Accelerometer
+total_mass = 0.006;
+tol = 1e-9;
+between = @(a,b,x) ((x >= a) && (x <= b));
+f_acc = @(x,y,z) (between(0.4,0.45,x) && between(0.02,0.03,y));
+accelerometer_nodes = find(mesh.find_nodes(f_acc));
+total_nodes = length(accelerometer_nodes);
+mass_values = total_mass*ones(total_nodes,1)/total_nodes;
+mesh = mesh.add_point_mass(accelerometer_nodes,mass_values);
 mesh.plot();
+axis equal
 
 M = @(element) Physics.M_Shell(element,3);
 K = @(element) Physics.K_Shell(element,3);
@@ -108,8 +119,13 @@ L = mesh.integral_along_surface(dofs_per_node,dofs_per_ele, ...
 fem.loads.node_vals.dof_list_in(L);
 
 %% Assembly
+m = mesh.all_node_dofs(dofs_per_node);
+u = mesh.all_element_dofs(dofs_per_node,dofs_per_ele);
 F = ~fem.bc.all_dofs;
 S = fem.S;
+Kmm = S(m,m);
+Kmu = S(m,u);
+Kuu = S(u,u);
 M = fem.M;
 R = fem.loads.all_dofs;
 

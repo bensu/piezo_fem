@@ -1,4 +1,4 @@
-piezo_fem
+PiezoFem
 =========
 
 FEM Element Method in MATLAB including Piezoelectric Shell Formulation.

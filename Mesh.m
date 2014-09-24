@@ -306,6 +306,13 @@ classdef Mesh
             % out = last_node_dof(mesh,dofs_per_node)
             out = mesh.n_nodes*dofs_per_node;
         end
+        function out = all_node_dofs(mesh,dofs_per_node)
+            out = 1:mesh.last_node_dof(dofs_per_node);
+        end
+        function out = all_element_dofs(mesh,dofs_per_node,dofs_per_ele)
+            last_ele_dofs = mesh.all_eles_dofs(dofs_per_node,dofs_per_ele,mesh.n_ele);
+            out = (mesh.last_node_dof(dofs_per_node)+1):last_ele_dofs(end);
+        end
         %% Element Helpers
         function ele = ele(mesh,ele_id)
             % ele = ele(mesh,ele_id)
@@ -398,7 +405,7 @@ classdef Mesh
             Y = zeros(nodes_per_ele,mesh.n_ele); 
             Z = zeros(nodes_per_ele,mesh.n_ele);
             C = char(mesh.n_ele,1);
-            cc = ['w','g'];
+            cc = ['w','r'];
             for e = 1:mesh.n_ele
                 e_nodes = mesh.ele_nodes(e);    % nodes for ele with id = e
                 C(e) = cc(mesh.laminate_ids(e));
@@ -416,16 +423,16 @@ classdef Mesh
                 patch(X(:,e),Y(:,e),Z(:,e),C(e));
             end
             e_nodes = mesh.connect(:,1:end)';
-            for n = 1:mesh.n_ele
-                text(X(:,n),Y(:,n),Z(:,n),int2str(e_nodes(1:4,n)), ...
-                                                'fontsize',8,'color','k');
-                text(sum(X(:,n))/4,sum(Y(:,n))/4,sum(Z(:,n))/4,int2str(n), ...
-                                                'fontsize',10,'color','r') ;
-            end
+%             for n = 1:mesh.n_ele
+%                 text(X(:,n),Y(:,n),Z(:,n),int2str(e_nodes(1:4,n)), ...
+%                                                 'fontsize',8,'color','k');
+%                 text(sum(X(:,n))/4,sum(Y(:,n))/4,sum(Z(:,n))/4,int2str(n), ...
+%                                                 'fontsize',10,'color','r') ;
+%             end
             if ~isempty(mesh.nodes_with_mass)
                 nodes = mesh.nodes_with_mass;
                 plot3(mesh.coords(nodes,1),mesh.coords(nodes,2), ...
-                                        mesh.coords(nodes,3),'go')
+                                        mesh.coords(nodes,3),'b.')
             end
             hold off
         end

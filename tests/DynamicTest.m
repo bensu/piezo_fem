@@ -201,6 +201,7 @@ classdef DynamicTest < matlab.unittest.TestCase
             for i = 1:size(V,2)
                 V(:,i) = V(:,i) / (norm(V(:,i))*sqrt(M2(i)));
             end
+            M2(1,1)
             
             %% Modal Decomposition
             dt = 5e-3;

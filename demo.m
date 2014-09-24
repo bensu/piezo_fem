@@ -53,13 +53,13 @@ fem.solve
 %% Verify
 expected_w
 w_max = max(abs(fem.dis.node_vals.vals(:,3)))
-%%
+
+%% Post Processing
 
 f_side = @(x,y,z) (abs(y)<tol);
 side_nodes = mesh.find_nodes(f_side);
 x = mesh.coords(side_nodes,1);
 w = fem.dis.node_vals.vals(side_nodes,3);
-
 
 scale = 10000;
 fem.plot(scale)

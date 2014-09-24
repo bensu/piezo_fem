@@ -20,7 +20,7 @@ expected_f = (lambda.^2)*c/(2*pi);
 laminate = Laminate(Material(E,nu,rho),t);
 mesh = Factory.ShellMesh(EleType.AHMAD8,laminate,[10,5],[a,b,t]);
 
-total_mass = 0.001;
+total_mass = 0.003;
 tol = 1e-9;
 between = @(a,b,x) ((x >= a) && (x <= b));
 f_acc = @(x,y,z) (between(0.38,0.45,x) && between(0.02,0.03,y));
